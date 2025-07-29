@@ -35,11 +35,11 @@ struct GameSession: Hashable, Codable {
     /// уровни сложности
     private(set) var loadedDifficulties: Set<QuestionDifficulty> = [.easy]
     
+    /// Выбранная категория
+    var selectedCategory: QuestionCategory? = nil
+    
     /// Массив вопросов
     private(set) var questions: [Question]
-    
-    /// Массив категорий
-    var categories: [QuestionCategory] = []
     
     /// Флаг, указывающий, завершена игра или нет
     ///  Игра завершена если:
@@ -60,13 +60,6 @@ struct GameSession: Hashable, Codable {
         // Получаем текущий вопрос по индексу
         questions[currentQuestionIndex]
     }
-    /// Для контроля кол-ва вопросов в массиве, испльзуется для дозагрузке по мере увеличение уровня сложности
-    var loadedQuestionCount: Int {
-        questions.count
-    }
-    
-    /// Выбранная категория
-    var selectedCategory: QuestionCategory? = nil
     
     /// Флаг для подсказки друга(право на ошибку)
     private(set) var hasUsedCallToFriend = false
@@ -80,7 +73,6 @@ struct GameSession: Hashable, Codable {
         self.currentQuestionIndex = 0
         self.score = 0
         self.lifelines = [.fiftyFifty, .secondChance, .audience]
-        print(questions)
     }
     
     mutating func appendQuestions(_ newQuestions: [Question], difficulty: QuestionDifficulty) {
@@ -91,7 +83,11 @@ struct GameSession: Hashable, Codable {
     mutating func addScore(_ amount: Int) {
         score += amount
     }
-
+    
+    mutating func updateSelectedCategory(_ category: QuestionCategory?) {
+        selectedCategory = category
+    }
+    
     mutating func setScore(_ amount: Int) {
         score = amount
     }

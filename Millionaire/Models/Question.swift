@@ -5,7 +5,7 @@
 //  Created by Наташа Спиридонова on 22.07.2025.
 //
 
-import Foundation
+import SwiftUI
 
 // MARK: - API Base
 
@@ -39,6 +39,18 @@ struct Question: Codable, Hashable {
     let correctAnswer: String
     let incorrectAnswers: [String]
 }
+
+//extension Question {
+//    func toDomainModel() -> Question {
+//        return Question(
+//            difficulty: difficulty,
+//            category: QuestionCleaner.clean(category),
+//            question: QuestionCleaner.clean(question),
+//            correctAnswer: QuestionCleaner.clean(correctAnswer),
+//            incorrectAnswers: incorrectAnswers.map { QuestionCleaner.clean($0) }
+//        )
+//    }
+//}
 
 // MARK: - Category Response
 

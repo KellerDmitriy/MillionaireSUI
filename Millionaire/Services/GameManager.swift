@@ -47,11 +47,32 @@ final class GameManager: ObservableObject {  // Управляет сессия�
             categoryID: categoryID,
             difficulty: .easy
         )
-        
-        guard let session = GameSession(questions: easy) else {
+
+        guard var session = GameSession(questions: easy) else {
             throw StartGameFailure.invalidQuestions
         }
-        
+
+        // Установим выбранную категорию
+//        let selectedCategory = try await getCategories().first(where: { $0.id == categoryID })
+//        session.updateSelectedCategory(selectedCategory)
+
+        self.currentSession = session
+
+//        // 🔄 Заранее подгрузим medium и hard
+//        let medium = try await questionRepository.fetchQuestions(
+//            amount: 5,
+//            categoryID: categoryID,
+//            difficulty: .medium
+//        )
+//        session.appendQuestions(medium, difficulty: .medium)
+//
+//        let hard = try await questionRepository.fetchQuestions(
+//            amount: 5,
+//            categoryID: categoryID,
+//            difficulty: .hard
+//        )
+//        session.appendQuestions(hard, difficulty: .hard)
+
         self.currentSession = session
         return session
     }
