@@ -16,6 +16,7 @@ struct CustomAlertView: View {
     var body: some View {
         ShadowedCardView(cornerRadius: 30) {
             VStack(spacing: 20) {
+                Spacer()
                 Text(message)
                     .millionaireTitleStyle()
                     .multilineTextAlignment(.center)
@@ -30,21 +31,22 @@ struct CustomAlertView: View {
                             secondButtonAction?()
                         }
                         .millionaireStyle(.primary)
-                        .frame(width: 200, height: 50)
+                        .frame(width: 180, height: 50)
                         
                         // Кнопка отмены
                         Button("Cancel") {
                             onDismiss()
                         }
                         .millionaireStyle(.regular)
-                        .frame(width: 200, height: 50)
+                        .frame(width: 180, height: 50)
                     } else {
                         // Обычная кнопка "Ok"
                         Button("Ok") { onDismiss() }
                             .millionaireStyle(.primary)
-                            .frame(width: 200, height: 50)
+                            .frame(width: 180, height: 50)
                     }
                 }
+                .padding()
                 .padding(.bottom, 50)
             }
         }

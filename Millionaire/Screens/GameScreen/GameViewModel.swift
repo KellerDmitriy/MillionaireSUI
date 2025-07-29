@@ -222,7 +222,7 @@ final class GameViewModel: ObservableObject {
             return
         }
         
-        // Начисляем призы исподбзуя PrizeCalculator
+        // Начисляем призы используя PrizeCalculator
         switch answerResult {
         case .correct:
             let prize = prizeCalculator.getPrizeAmount(for: currentQuestionIndex)
@@ -370,9 +370,9 @@ final class GameViewModel: ObservableObject {
         answersForAudienceLifeline = resultString
     }
     
-    func callYourFriendButtonTap() {
+    func secondChanceButtonTap() {
         var session = self.session
-        session.useLifeline(.callToFriend)
+        session.useLifeline(.secondChance)
         self.session = session
         mistakeAllowedUsed = true
     }

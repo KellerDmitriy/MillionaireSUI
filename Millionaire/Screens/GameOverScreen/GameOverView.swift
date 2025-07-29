@@ -33,7 +33,7 @@ struct GameOverView: View {
     
     var body: some View {
         ZStack {
-            backgroundImage
+            AnimatedGradientBackgroundView()
             
             VStack(spacing: 0) {
                 Image(.logo)
@@ -74,6 +74,7 @@ struct GameOverView: View {
                     }
                     .millionaireStyle(.regular)
                 }
+                .padding(20)
                 .padding(.bottom, 40)
             }
         }
@@ -93,15 +94,10 @@ struct GameOverView: View {
 #Preview {
     GameOverView(
         session: GameSession(
-            questions: Array(repeating: Question(
-                difficulty: .easy,
-                category: "Test",
-                question: "Test?",
-                correctAnswer: "A",
-                incorrectAnswers: ["B", "C", "D"]
-            ), count: 15),
-            currentQuestionIndex: 7,
-            score: 15000
+            questions: Array(
+                repeating: Question(difficulty: .easy, category: "aaa", question: "Как дела?", correctAnswer: "Хорошо", incorrectAnswers: Array(repeating: "Плохо", count: 3)),
+                count: 15
+            )
         )!,
         mode: .gameOver,
         onNewGame: { print("New game") },

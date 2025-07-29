@@ -13,6 +13,6 @@ enum Lifeline: Codable, Hashable {
     case fiftyFifty
     // Помощь зала
     case audience
-    // Звонок другу
-    case callToFriend
+    // Право на ошибку
+    case secondChance
 }

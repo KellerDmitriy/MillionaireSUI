@@ -15,8 +15,8 @@ extension Lifeline {
             return Image(.lifeline50)
         case .audience:
             return Image(.lifelineAudience)
-        case .callToFriend:
-            return Image(.lifelineCall)
+        case .secondChance:
+            return Image(.lifeSave)
         }
     }
 }
@@ -41,5 +41,5 @@ struct HelpButton: View {
 
 // MARK: - Preview
 #Preview {
-    HelpButton(type: .callToFriend, action: {})
+    HelpButton(type: .secondChance, action: {})
 }

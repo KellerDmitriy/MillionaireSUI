@@ -30,12 +30,6 @@ struct ScoreboardRowView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fill)
         )
-        .clipShape(MillionaireShape())
-        .overlay(
-            MillionaireShape()
-                .stroke(Color.white, lineWidth: 3)
-        )
-        .padding(.vertical, 2)
     }
 }
 

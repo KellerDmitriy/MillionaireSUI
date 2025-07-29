@@ -100,34 +100,27 @@ final class HomeViewModel: ObservableObject {
     private func startGame(type: GameType) async {
         switch type {
         case .new:
-            await startNewGameFlow()
+            navigationCoordinator.showCategories()
             
         case .continued:
             continueExistingGame()
         }
     }
     
-    private func startNewGameFlow() async {
-        
-        // Показываем загрузку
+    func startNewGameFlow(for categoryID: Int?) async {
         navigationCoordinator.showLoading()
         isLoading = true
-        
+
         do {
-            let session = try await gameManager.startNewGame()
-            
-            // Небольшая задержка для UX
+            let session = try await gameManager.startNewGame(for: categoryID)
             try? await Task.sleep(nanoseconds: 500_000_000)
-            
-            // Переходим к игре
             navigationCoordinator.showGame(session)
         } catch {
-            // Обработка ошибки
             navigationCoordinator.popToRoot()
             errorMessage = "Не удалось загрузить вопросы. Проверьте интернет-соединение."
             showError = true
         }
-        
+
         isLoading = false
     }
     
@@ -138,7 +131,7 @@ final class HomeViewModel: ObservableObject {
         isLoading = true
         
         do {
-            let session = try await gameManager.startNewGame()
+            let session = try await gameManager.startNewGame(for: nil)
             
             // Небольшая задержка для UX
             try? await Task.sleep(nanoseconds: 500_000_000)

@@ -15,7 +15,7 @@ struct ScoreboardView: View {
     
     @State private var showWithdrawalAlert = false
     @State private var showGameOverZeroAlert = false
-    
+    @State private var isAnimating = false
     
     init(session: GameSession,
          mode: GameViewModel.ScoreboardMode = .intermediate,
@@ -30,36 +30,29 @@ struct ScoreboardView: View {
     var body: some View {
         ZStack {
             // Background
-            Image("Background")
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                        // Логотип
-                        Image("ScoreboardScreenLogo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 85, height: 85)
-                            
-                            .padding(.top, 40)
-
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 4) {
+            AnimatedGradientBackgroundView()
+                VStack(spacing: 0) {
+                    // Логотип
+                    Image("ScoreboardScreenLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 85, height: 85)
+                        .offset(y: 20)
+                        .zIndex(1)
+                    
+                    VStack(spacing: 0) {
                         // Таблица уровней
                         ForEach(viewModel.levels) { level in
                             ScoreboardRowView(level: level)
                         }
                     }
                     .padding(.horizontal, 30)
-                    .padding(.top, 16)
                     .padding(.bottom, 50)
                     
-                    Spacer()
                 }
-            }
-            .blur(radius: showWithdrawalAlert ? 5 : 0)
-            .blur(radius: showGameOverZeroAlert ? 5 : 0)
+                .blur(radius: showWithdrawalAlert ? 5 : 0)
+                .blur(radius: showGameOverZeroAlert ? 5 : 0)
+           
             // Alert Overlay
             if showWithdrawalAlert {
                 Color.black.opacity(0.5)
@@ -67,11 +60,10 @@ struct ScoreboardView: View {
                     .onTapGesture {
                         showWithdrawalAlert = false
                     }
-
+                
                 CustomAlertView(
                     message: "Are you sure you want to claim a prize of $\(viewModel.gameSession.score)?",
                     onDismiss: {
-                       
                         showWithdrawalAlert = false
                     },
                     showSecondButton: true,
@@ -86,36 +78,38 @@ struct ScoreboardView: View {
                 .zIndex(2)
             }
             if showGameOverZeroAlert {
-                            Color.black.opacity(0.5)
-                                .ignoresSafeArea()
-
-                            CustomAlertView(
-                                message: "You lost. Your prize is $0.",
-                                onDismiss: {
-                                    showGameOverZeroAlert = false
-                                    viewModel.deinitAudioService()
-                                    onClose()
-                                },
-                                showSecondButton: false
-                            )
-                            .frame(width: 280, height: 300)
-                            .cornerRadius(20)
-                            .zIndex(3)
-                        }
+                Color.black.opacity(0.5)
+                    .ignoresSafeArea()
+                
+                CustomAlertView(
+                    message: "You lost. Your prize is $0.",
+                    onDismiss: {
+                        showGameOverZeroAlert = false
+                        viewModel.deinitAudioService()
+                        onClose()
+                    },
+                    showSecondButton: false
+                )
+                .frame(width: 280, height: 300)
+                .cornerRadius(20)
+                .zIndex(3)
+            }
+            
         }
+        
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .onAppear {
-                    viewModel.playSound(mode: mode)
-                    if mode == .gameOver && viewModel.currentPrize < 5000 {
-                        Task {
-                            try await Task.sleep(for: .seconds(1))
-                            withAnimation {
-                                showGameOverZeroAlert = true
-                            }
-                        }
+            viewModel.playSound(mode: mode)
+            if mode == .gameOver && viewModel.currentPrize < 5000 {
+                Task {
+                    try await Task.sleep(for: .seconds(1))
+                    withAnimation {
+                        showGameOverZeroAlert = true
                     }
                 }
+            }
+        }
         
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -127,7 +121,7 @@ struct ScoreboardView: View {
                     }
                 }
             }
-
+            
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {
                     viewModel.deinitAudioService()
@@ -152,10 +146,10 @@ struct ScoreboardView: View {
             incorrectAnswers: ["B", "C", "D"]
         )
     }
-    let session = GameSession(questions: questions, currentQuestionIndex: 10, score: 15000)!
+    let session = GameSession(questions: questions)
     
     ScoreboardView(
-        session: session,
+        session: session!,
         mode: .intermediate,
         onAction: {
             print("Withdrawal action")
@@ -176,10 +170,10 @@ struct ScoreboardView: View {
             incorrectAnswers: ["B", "C", "D"]
         )
     }
-    let session = GameSession(questions: questions, currentQuestionIndex: 5, score: 5000)!
+    let session = GameSession(questions: questions)
     
     ScoreboardView(
-        session: session,
+        session: session!,
         mode: .gameOver,
         onAction: {
             print("No action in game over")
@@ -201,10 +195,10 @@ struct ScoreboardView: View {
                 incorrectAnswers: ["B", "C", "D"]
             )
         }
-        let session = GameSession(questions: questions, currentQuestionIndex: 5, score: 5000)!
+        let session = GameSession(questions: questions)
         
         ScoreboardView(
-            session: session,
+            session: session!,
             mode: .victory,
             onAction: {
                 print("No action in game over")

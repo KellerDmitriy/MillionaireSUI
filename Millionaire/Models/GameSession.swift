@@ -32,8 +32,14 @@ struct CallToFriendLifelineResult {
 
 /// Модель игры с полной логикой обновления её состояния
 struct GameSession: Hashable, Codable {
+    /// уровни сложности
+    private(set) var loadedDifficulties: Set<QuestionDifficulty> = [.easy]
+    
     /// Массив вопросов
-    let questions: [Question]
+    private(set) var questions: [Question]
+    
+    /// Массив категорий
+    var categories: [QuestionCategory] = []
     
     /// Флаг, указывающий, завершена игра или нет
     ///  Игра завершена если:
@@ -54,34 +60,33 @@ struct GameSession: Hashable, Codable {
         // Получаем текущий вопрос по индексу
         questions[currentQuestionIndex]
     }
+    /// Для контроля кол-ва вопросов в массиве, испльзуется для дозагрузке по мере увеличение уровня сложности
+    var loadedQuestionCount: Int {
+        questions.count
+    }
+    
+    /// Выбранная категория
+    var selectedCategory: QuestionCategory? = nil
+    
     /// Флаг для подсказки друга(право на ошибку)
     private(set) var hasUsedCallToFriend = false
     
-    init?(
-        questions: [Question],
-        isFinished: Bool = false,
-        currentQuestionIndex: Int = 0,
-        score: Int = 0,
-        lifelines: Set<Lifeline> = [.fiftyFifty, .callToFriend, .audience]
-    ) {
-        // Проверяем корректное количество вопросов в массиве questions
-        // Проверяем, входит ли индекс текущего вопроса в диапазон
-        // Если нет, инициализации не произойдет, игровая сессия не создастся
-        guard
-            questions.count == 15,
-            0..<15 ~= currentQuestionIndex
-        else {
-            return nil
-        }
+    init?(questions: [Question]) {
         
-        // Если все правильно, инициализируем
+        guard !questions.isEmpty else { return nil }
+        
         self.questions = questions
-        self.isFinished = isFinished
-        self.currentQuestionIndex = currentQuestionIndex
-        self.score = score
-        self.lifelines = lifelines
+        self.isFinished = false
+        self.currentQuestionIndex = 0
+        self.score = 0
+        self.lifelines = [.fiftyFifty, .secondChance, .audience]
+        print(questions)
     }
     
+    mutating func appendQuestions(_ newQuestions: [Question], difficulty: QuestionDifficulty) {
+        questions.append(contentsOf: newQuestions)
+        loadedDifficulties.insert(difficulty)
+    }
     
     mutating func addScore(_ amount: Int) {
         score += amount
@@ -164,7 +169,7 @@ struct GameSession: Hashable, Codable {
     ///  метод для подсказки "звонок другу"
     mutating func useLifeline(_ lifeline: Lifeline) {
         lifelines.remove(lifeline)
-        if lifeline == .callToFriend {
+        if lifeline == .secondChance {
             print("Подсказка 'Право на ошибку' активирована")
             hasUsedCallToFriend = true
         }

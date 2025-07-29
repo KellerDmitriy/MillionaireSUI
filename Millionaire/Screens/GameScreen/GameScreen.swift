@@ -174,16 +174,16 @@ struct GameScreen: View {
             .disabled(!viewModel.lifelines.contains(.audience))
             
             HelpButton(
-                type: .callToFriend,
+                type: .secondChance,
                 action: {
-                    viewModel.callYourFriendButtonTap()
+                    viewModel.secondChanceButtonTap()
                     alertMessage = "You have the right to make one mistake."
                     withAnimation {
                         showCustomAlert = true
                     }
                 }
             )
-            .disabled(!viewModel.lifelines.contains(.callToFriend))
+            .disabled(!viewModel.lifelines.contains(.secondChance))
         }
     }
     
