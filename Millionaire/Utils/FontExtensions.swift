@@ -83,6 +83,14 @@ extension Text {
             .foregroundColor(.white)
     }
     
+    /// Стиль для категорий вопросов
+    func millionaireCategoryTitleStyle() -> some View {
+        self
+            .font(.millionaireAnswerLetter)
+            .fontWeight(.bold)
+            .foregroundColor(.white)
+    }
+    
     /// Стиль для текста вопроса
     func millionaireQuestionStyle() -> some View {
         self

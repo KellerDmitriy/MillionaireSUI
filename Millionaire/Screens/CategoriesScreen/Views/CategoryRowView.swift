@@ -9,27 +9,25 @@ import SwiftUI
 
 struct CategoryRowView: View {
     let index: Int
-    let category: CategoryRowModel
+    let category: QuestionCategory
     let isSelected: Bool
     
     var body: some View {
         HStack {
             Text("\(index):")
-                .font(.millionaireMenuSubtitle)
-                .foregroundStyle(.answerGradient3)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .millionaireCategoryTitleStyle()
+                .padding(.horizontal, 25)
             Text(category.name)
-                .font(.millionaireMenuSubtitle)
-                .foregroundStyle(.answerGradient3)
+                .millionaireCategoryTitleStyle()
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-                
+                .padding(.horizontal, 4)
             Spacer()
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
+        .frame(height: 44)
+        .padding(.vertical, 0)
         .background(
-            Image(category.categoryType.rawValue)
+            Image(isSelected ? "Current" : "Regular")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
         )
@@ -37,5 +35,5 @@ struct CategoryRowView: View {
 }
 
 #Preview {
-    CategoryRowView(index: 1, category: .init(id: 1, name: "films", isCheckpoint: .random()), isSelected: true)
+    CategoryRowView(index: 1, category: .init(id: 1, name: "films"), isSelected: false)
 }

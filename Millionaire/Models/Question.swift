@@ -51,6 +51,6 @@ struct CategoryResponse: Codable {
 
 /// Represents a trivia category
 struct QuestionCategory: Codable, Identifiable, Equatable, Hashable {
-    let id: Int
+    let id: Int?
     let name: String
 }
