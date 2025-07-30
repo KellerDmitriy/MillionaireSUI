@@ -17,7 +17,7 @@ struct CategoryRowView: View {
             Text("\(index):")
                 .millionaireCategoryTitleStyle()
                 .padding(.horizontal, 25)
-            Text(category.name)
+            Text(category.displayName)
                 .millionaireCategoryTitleStyle()
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
