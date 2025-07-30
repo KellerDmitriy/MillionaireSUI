@@ -174,16 +174,16 @@ struct GameScreen: View {
             .disabled(!viewModel.lifelines.contains(.audience))
             
             HelpButton(
-                type: .callToFriend,
+                type: .secondChance,
                 action: {
-                    viewModel.callYourFriendButtonTap()
+                    viewModel.secondChanceButtonTap()
                     alertMessage = "You have the right to make one mistake."
                     withAnimation {
                         showCustomAlert = true
                     }
                 }
             )
-            .disabled(!viewModel.lifelines.contains(.callToFriend))
+            .disabled(!viewModel.lifelines.contains(.secondChance))
         }
     }
     
@@ -225,7 +225,7 @@ struct GameScreen: View {
             viewModel: GameViewModel(
                 initialSession: GameSession(
                     questions: Array(
-                        repeating: Question(difficulty: .easy, category: "aaa", question: "Как дела?", correctAnswer: "Хорошо", incorrectAnswers: Array(repeating: "Плохо", count: 3)),
+                        repeating: QuestionDTO(difficulty: .easy, category: "aaa", question: "Как дела?", correctAnswer: "Хорошо", incorrectAnswers: Array(repeating: "Плохо", count: 3)),
                         count: 15
                     )
                 )!

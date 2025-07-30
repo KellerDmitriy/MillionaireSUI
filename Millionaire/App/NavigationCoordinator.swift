@@ -23,6 +23,7 @@ import SwiftUI
 // MARK: - Navigation Routes
 enum NavigationRoute: Hashable {
     case loading
+    case categories
     case game(GameSession)
     case scoreboard(GameSession, GameViewModel.ScoreboardMode)
     case gameOver(GameSession, GameViewModel.ScoreboardMode)
@@ -47,6 +48,10 @@ final class NavigationCoordinator: ObservableObject {
     
     func showLoading() {
         path = [.loading]
+    }
+    
+    func showCategories() {
+        path.append(.categories)
     }
     
     func showGame(_ session: GameSession) {
@@ -127,6 +132,21 @@ final class NavigationCoordinator: ObservableObject {
             LoadingView()
                 .navigationBarBackButtonHidden(true)
             
+        case .categories:
+            if let gameManager {
+                CategoriesScreen(
+                    gameManager: gameManager,
+                    onClose: { [weak self] in
+                        self?.popToRoot()
+                    },
+                    onCategorySelectedID: { [weak self] selectedCategoryID in
+                        Task {
+                            await self?.homeViewModel?.startNewGameFlow(for: selectedCategoryID)
+                        }
+                    }
+                )
+            }
+
         case .game(let session):
 
             GameScreen(
@@ -167,6 +187,7 @@ final class NavigationCoordinator: ObservableObject {
                     self?.returnToMainScreenFromGameOver()
                 }
             )
+  
         }
     }
     

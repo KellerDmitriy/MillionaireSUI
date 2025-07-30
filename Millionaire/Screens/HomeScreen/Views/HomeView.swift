@@ -59,7 +59,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack(path: $navigationCoordinator.path) {
             ZStack {
-                backgroundImage
+                AnimatedGradientBackgroundView()
                 
                 // Кнопка Rules
                 VStack {
@@ -99,16 +99,6 @@ struct HomeView: View {
     }
     
     // MARK: - View Components
-    
-    @ViewBuilder
-    private var backgroundImage: some View {
-        Image("Background")
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-            .ignoresSafeArea(.all)
-    }
-    
     @ViewBuilder
     private var helpButton: some View {
         HStack {
@@ -227,7 +217,7 @@ private extension GameSession {
     static func preview() -> Self {
         GameSession(
             questions: Array(
-                repeating: Question(difficulty: .easy, category: "aaa", question: "Как дела?", correctAnswer: "Хорошо", incorrectAnswers: Array(repeating: "Плохо", count: 3)),
+                repeating: QuestionDTO(difficulty: .easy, category: "aaa", question: "Как дела?", correctAnswer: "Хорошо", incorrectAnswers: Array(repeating: "Плохо", count: 3)),
                 count: 15
             )
         )!

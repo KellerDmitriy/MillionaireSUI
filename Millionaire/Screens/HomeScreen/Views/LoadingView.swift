@@ -9,10 +9,7 @@ import SwiftUI
 struct LoadingView: View {
     var body: some View {
         ZStack {
-            Image("Background")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .ignoresSafeArea()
+            AnimatedGradientBackgroundView()
             
             VStack(spacing: 20) {
                 ProgressView()
