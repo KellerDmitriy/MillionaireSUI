@@ -26,13 +26,13 @@ enum QuestionDifficulty: String, Codable {
 /// Top-level response from the questions API
 struct QuestionsResponse: Codable {
     let responseCode: Int
-    let results: [Question]
+    let results: [QuestionDTO]
 }
 
 // MARK: - Question Model
 
 /// Represents a single trivia question
-struct Question: Codable, Hashable {
+struct QuestionDTO: Codable, Hashable {
     let difficulty: QuestionDifficulty
     let category: String
     let question: String
@@ -40,17 +40,17 @@ struct Question: Codable, Hashable {
     let incorrectAnswers: [String]
 }
 
-//extension Question {
-//    func toDomainModel() -> Question {
-//        return Question(
-//            difficulty: difficulty,
-//            category: QuestionCleaner.clean(category),
-//            question: QuestionCleaner.clean(question),
-//            correctAnswer: QuestionCleaner.clean(correctAnswer),
-//            incorrectAnswers: incorrectAnswers.map { QuestionCleaner.clean($0) }
-//        )
-//    }
-//}
+extension QuestionDTO {
+    func cleaned() -> GameQuestion {
+        return GameQuestion(
+            difficulty: difficulty,
+            category: QuestionCleaner.clean(category),
+            question: QuestionCleaner.clean(question),
+            correctAnswer: QuestionCleaner.clean(correctAnswer),
+            incorrectAnswers: incorrectAnswers.map { QuestionCleaner.clean($0) }
+        )
+    }
+}
 
 // MARK: - Category Response
 

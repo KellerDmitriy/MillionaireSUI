@@ -15,7 +15,7 @@ protocol IQuestionRepository {
         amount: Int,
         categoryID: Int?,
         difficulty: QuestionDifficulty?
-    ) async throws -> [Question]
+    ) async throws -> [QuestionDTO]
 }
 
 /// Provides access to trivia questions and categories from Open Trivia DB API
@@ -45,7 +45,7 @@ final class QuestionRepository: IQuestionRepository {
         amount: Int,
         categoryID: Int? = nil,
         difficulty: QuestionDifficulty? = nil
-    ) async throws -> [Question] {
+    ) async throws -> [QuestionDTO] {
         let endpoint = QuestionAPIEndpoint
             .questions(amount: amount, categoryID: categoryID, difficulty: difficulty)
             .makeEndpoint()

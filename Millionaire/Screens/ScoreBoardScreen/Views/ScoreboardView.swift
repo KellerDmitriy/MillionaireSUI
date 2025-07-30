@@ -138,7 +138,7 @@ struct ScoreboardView: View {
 
 #Preview("Intermediate") {
     let questions = (1...15).map { i in
-        Question(
+        QuestionDTO(
             difficulty: .easy,
             category: "Общие знания",
             question: "Вопрос?",
@@ -162,7 +162,7 @@ struct ScoreboardView: View {
 
 #Preview("Game Over") {
     let questions = (1...15).map { i in
-        Question(
+        QuestionDTO(
             difficulty: .easy,
             category: "Общие знания",
             question: "Вопрос?",
@@ -187,7 +187,7 @@ struct ScoreboardView: View {
 #Preview("Victory") {
     NavigationView {
         let questions = (1...15).map { i in
-            Question(
+            QuestionDTO(
                 difficulty: .easy,
                 category: "Общие знания",
                 question: "Вопрос?",

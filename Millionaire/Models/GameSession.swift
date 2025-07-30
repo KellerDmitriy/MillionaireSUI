@@ -39,7 +39,7 @@ struct GameSession: Hashable, Codable {
     var selectedCategory: QuestionCategory? = nil
     
     /// Массив вопросов
-    private(set) var questions: [Question]
+    private(set) var questions: [GameQuestion]
     
     /// Флаг, указывающий, завершена игра или нет
     ///  Игра завершена если:
@@ -56,7 +56,7 @@ struct GameSession: Hashable, Codable {
     private(set) var lifelines: Set<Lifeline>
     
     /// Tекущий вопрос
-    var currentQuestion: Question {
+    var currentQuestion: GameQuestion {
         // Получаем текущий вопрос по индексу
         questions[currentQuestionIndex]
     }
@@ -64,19 +64,21 @@ struct GameSession: Hashable, Codable {
     /// Флаг для подсказки друга(право на ошибку)
     private(set) var hasUsedCallToFriend = false
     
-    init?(questions: [Question]) {
+    init?(questions: [QuestionDTO]) {
         
         guard !questions.isEmpty else { return nil }
-        
-        self.questions = questions
+        let cleanedQuestions: [GameQuestion] = questions.map { $0.cleaned() }
+            
+        self.questions = cleanedQuestions
         self.isFinished = false
         self.currentQuestionIndex = 0
         self.score = 0
         self.lifelines = [.fiftyFifty, .secondChance, .audience]
     }
     
-    mutating func appendQuestions(_ newQuestions: [Question], difficulty: QuestionDifficulty) {
-        questions.append(contentsOf: newQuestions)
+    mutating func appendQuestions(_ newQuestions: [QuestionDTO], difficulty: QuestionDifficulty) {
+        let cleanedQuestions: [GameQuestion] = newQuestions.map { $0.cleaned() }
+        questions.append(contentsOf: cleanedQuestions)
         loadedDifficulties.insert(difficulty)
     }
     

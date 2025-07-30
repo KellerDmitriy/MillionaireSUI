@@ -85,7 +85,7 @@ final class GameViewModel: ObservableObject {
 #endif
     }
     
-    var question: Question { session.currentQuestion }
+    var question: GameQuestion { session.currentQuestion }
     
     var numberQuestion: Int { session.currentQuestionIndex + 1 }
     
@@ -383,7 +383,7 @@ final class GameViewModel: ObservableObject {
     }
 }
 
-private extension Question {
+private extension GameQuestion {
     var allAnswers: [String] {
         [correctAnswer] + incorrectAnswers
     }
