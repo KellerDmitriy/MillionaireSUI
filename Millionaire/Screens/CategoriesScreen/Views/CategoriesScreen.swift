@@ -44,7 +44,7 @@ struct CategoriesScreen: View {
                     // MARK: Categories List ScrollView
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 8) {
-                            ForEach(Array(viewModel.categories.enumerated()), id: \.1.id) { index, category in
+                            ForEach(Array(viewModel.categories.enumerated()), id: \.0) { index, category in
                                 CategoryRowView(
                                     index: index,
                                     category: category,

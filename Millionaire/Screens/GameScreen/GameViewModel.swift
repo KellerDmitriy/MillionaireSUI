@@ -64,7 +64,9 @@ final class GameViewModel: ObservableObject {
     // Доп состояния для UI
     @Published private(set) var timerType: TimerType = .normal
     
-    @Published var answersForAudienceLifeline: String?
+    /// хранение версий от помощи зала в процентах
+    @Published var audienceVotes: [Int]? = nil
+    
     @Published var selectedAnswer: String?
     @Published var answerResultState: AnswerResult?
     ///флаг, чтобы знать, была ли применена подсказка
@@ -309,65 +311,20 @@ final class GameViewModel: ObservableObject {
     }
     
     func audienceButtonTap() {
-        guard let result = session.useAudienceLifeline() else {
+        let visibleAnswers = answers.filter { !disabledAnswers.contains($0) }
+        
+        guard let result = session.useAudienceLifeline(allAnswers: visibleAnswers) else {
             return
         }
-        
-        // Определяем базовую вероятность правильного ответа
-        let baseProbability = numberQuestion <= 5 ? 0.7 : 0.5
-        
-        // Учитываем использование подсказки 50:50
-        let activeAnswersCount = answers.count - disabledAnswers.count
-        let adjustedProbability = activeAnswersCount == 2 ? 0.85 : baseProbability
-        
-        // Создаем массив для распределения процентов
-        var audienceResults: [(answer: String, percentage: Int)] = []
-        
-        // Получаем активные ответы
-        let activeAnswers = answers.filter { !disabledAnswers.contains($0) }
-        let correctAnswer = result.answer
-        
-        // Добавляем процент правильного ответа
-        audienceResults.append((answer: correctAnswer,
-                              percentage: Int(adjustedProbability * 100)))
-        
-        // Распределяем оставшиеся проценты между остальными активными ответами
-        let remainingPercentage = 100 - audienceResults[0].percentage
-        var percentages = [Int]()
-        
-        // Если есть другие активные ответы
-        let remainingActiveAnswers = activeAnswers.filter { $0 != correctAnswer }
-        if !remainingActiveAnswers.isEmpty {
-            var tempPercentages = [Int]()
-            var remaining = remainingPercentage
-            
-            for i in 0..<remainingActiveAnswers.count {
-                if i == remainingActiveAnswers.count - 1 {
-                    tempPercentages.append(remaining)
-                } else {
-                    let maxPercent = max(1, remaining - (remainingActiveAnswers.count - i - 1))
-                    let randomPercent = Int.random(in: 1...maxPercent)
-                    tempPercentages.append(randomPercent)
-                    remaining -= randomPercent
-                }
+        var votes = Array(repeating: 0, count: 4)
+        for (index, answer) in visibleAnswers.enumerated() {
+            if let originalIndex = answers.firstIndex(of: answer) {
+                votes[originalIndex] = result.votesPerAnswer[index]
             }
-            percentages = tempPercentages
         }
+
+        audienceVotes = votes
         
-        // Добавляем остальные активные ответы с их процентами
-        for (index, answer) in remainingActiveAnswers.enumerated() {
-            audienceResults.append((answer: answer, percentage: percentages[index]))
-        }
-        
-        // Сортируем результаты по убыванию процентов
-        audienceResults.sort { $0.percentage > $1.percentage }
-        
-        // Формируем строку с результатами только для активных ответов
-        let resultString = audienceResults
-            .map { "\($0.answer): \($0.percentage)%" }
-            .joined(separator: "\n")
-        
-        answersForAudienceLifeline = resultString
     }
     
     func secondChanceButtonTap() {

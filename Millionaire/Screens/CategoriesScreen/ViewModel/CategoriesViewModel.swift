@@ -26,6 +26,7 @@ final class CategoriesViewModel: ObservableObject {
     func loadCategories() async {
         do {
             await MainActor.run { self.isLoading = true }
+            try? await Task.sleep(nanoseconds: 500_000_000)
             defer { Task { await MainActor.run { self.isLoading = false } } }
             
             // Fetch categories from the API
