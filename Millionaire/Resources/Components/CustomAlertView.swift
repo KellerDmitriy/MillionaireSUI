@@ -7,55 +7,69 @@
 import SwiftUI
 
 struct CustomAlertView: View {
-    
     let message: String
     let onDismiss: () -> Void
     var showSecondButton: Bool = false
     var secondButtonAction: (() -> Void)?
-    
+
     var body: some View {
         ZStack {
-            VStack(spacing: 20) {
-                Spacer()
+            Image(.background)
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+                .cornerRadius(30)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 30)
+                        .stroke(Color.clear)
+                )
+                .basicShadow()
+            
+            VStack(spacing: 24) {
                 Text(message)
                     .millionaireTitleStyle()
-                    .lineLimit(3)
                     .multilineTextAlignment(.center)
-                    .padding(.top, 50)
-                
-                Spacer()
-                
-                VStack(spacing: 16) {
-                    if showSecondButton {
-                        // Кнопка подтверждения
-                        Button("Collect your winnings") {
-                            secondButtonAction?()
-                        }
-                        .millionaireStyle(.primary)
-                        .frame(height: 44)
-                        
-                        // Кнопка отмены
-                        Button("Cancel") {
-                            onDismiss()
-                        }
-                        .millionaireStyle(.regular)
-                        .frame(height: 44)
-                    } else {
-                        // Обычная кнопка "Ok"
-                        Button("Ok") { onDismiss() }
-                            .millionaireStyle(.primary)
-                            .frame(height: 44)
-                    }
-                }
-                .padding(.bottom, 50)
+                    .padding(.horizontal)
+
+                buttonSection
             }
-            .padding()
-            .basicShadow()
-            .background(Image(.background))
-            .cornerRadius(20)
-            .padding()
-          
+            .padding(24)
         }
+        .frame(width: 300, height: 450)
+        .background(Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: 30))
+        .padding()
+    }
+
+    @ViewBuilder
+    private var buttonSection: some View {
+        VStack(spacing: 16) {
+            if showSecondButton {
+                primaryButton(title: "Collect your winnings", action: secondButtonAction)
+                    .padding(.vertical)
+                secondaryButton(title: "Cancel", action: onDismiss)
+            } else {
+                primaryButton(title: "Ok", action: onDismiss)
+            }
+        }
+        .padding(.bottom)
+    }
+
+    private func primaryButton(title: String, action: (() -> Void)?) -> some View {
+        Button(title) {
+            action?()
+        }
+        .millionaireStyle(.primary)
+        .frame(height: 44)
+    }
+
+    private func secondaryButton(title: String, action: @escaping () -> Void) -> some View {
+        Button(title) {
+            action()
+        }
+        .millionaireStyle(.regular)
+        .frame(height: 44)
     }
 }
 

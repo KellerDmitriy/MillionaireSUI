@@ -129,6 +129,7 @@ extension MillionaireButtonStyle {
 struct MillionaireAnswerButtonStyle: ButtonStyle {
     
     // MARK: - Properties
+    @State private var isBlinking = false
     
     let state: AnswerState
     @Environment(\.isEnabled) private var isEnabled

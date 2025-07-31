@@ -72,8 +72,6 @@ struct GameScreen: View {
                             showCustomAlert = false
                         }
                     }
-                    .frame(width: 300, height: 450)
-                    .cornerRadius(20)
                     .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                     .zIndex(2)
                 }
@@ -86,8 +84,7 @@ struct GameScreen: View {
                     AudienceHelpView(votesPerAnswer: votes) {
                         withAnimation { showAudienceHelpView = false }
                     }
-                    .frame(width: 300, height: 450)
-                    .cornerRadius(20)
+                    .frame(width: 320, height: 450)
                     .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                     .zIndex(2)
                 }
@@ -146,9 +143,7 @@ struct GameScreen: View {
     private func questionTextView() -> some View {
         VStack {
             Text(viewModel.question.question)
-                .font(.headline)
-                .foregroundStyle(.white)
-                .bold()
+                .millionaireQuestionStyle()
             Spacer()
         }
     }

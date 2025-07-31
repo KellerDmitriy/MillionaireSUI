@@ -49,7 +49,7 @@ struct AudienceHelpView: View {
         }
         .padding()
         .background(Image(.background))
-        .cornerRadius(20)
+        .cornerRadius(30)
         .basicShadow()
         .onAppear {
             animateGraphs = true

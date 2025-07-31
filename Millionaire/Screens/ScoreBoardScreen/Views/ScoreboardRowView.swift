@@ -11,7 +11,8 @@ import SwiftUI
 
 struct ScoreboardRowView: View {
     let level: ScoreboardRow
-
+    @State private var isBlinking = false
+    
     var body: some View {
         HStack {
             Text("\(level.number):")
@@ -31,8 +32,25 @@ struct ScoreboardRowView: View {
                 .aspectRatio(contentMode: .fill)
         )
         .frame(height: 44)
-    }
-}
+        .opacity(level.isCurrent ? (isBlinking ? 0.1 : 1.0) : 1.0)
+              .onAppear {
+                  if level.isCurrent {
+                      withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
+                          isBlinking.toggle()
+                      }
+                  }
+              }
+              .onChange(of: level.isCurrent) { newValue in
+                  if newValue {
+                      withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
+                          isBlinking = true
+                      }
+                  } else {
+                      isBlinking = false
+                  }
+              }
+          }
+      }
 
 #Preview("Top") {
     ScoreboardRowView(
