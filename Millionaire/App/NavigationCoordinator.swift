@@ -148,7 +148,6 @@ final class NavigationCoordinator: ObservableObject {
             }
 
         case .game(let session):
-
             GameScreen(
                 viewModel: createGameViewModel(for: session)
             )

@@ -65,12 +65,21 @@ struct ScoreboardView: View {
                     message: "Are you sure you want to claim a prize of $\(viewModel.gameSession.score)?",
                     onDismiss: {
                         showWithdrawalAlert = false
+                        Task {
+                            try? await Task.sleep(nanoseconds: 1_000_000_000)
+                            viewModel.deinitAudioService()
+                            onClose()
+                        }
                     },
                     showSecondButton: true,
                     secondButtonAction: {
                         viewModel.takeMoney()
-                        onAction()
-                        showWithdrawalAlert = false
+                        Task {
+                            try? await Task.sleep(nanoseconds: 1_000_000_000)
+                            showWithdrawalAlert = false
+                            viewModel.deinitAudioService()
+                            onAction()
+                        }
                     }
                 )
                 .frame(width: 300, height: 400)
@@ -99,7 +108,7 @@ struct ScoreboardView: View {
         
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
-        .onAppear {
+        .task {
             viewModel.playSound(mode: mode)
             if mode == .gameOver && viewModel.currentPrize < 5000 {
                 Task {
@@ -108,6 +117,11 @@ struct ScoreboardView: View {
                         showGameOverZeroAlert = true
                     }
                 }
+            }
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
+            if !showWithdrawalAlert {
+                viewModel.deinitAudioService()
+                onClose()
             }
         }
         
@@ -119,17 +133,6 @@ struct ScoreboardView: View {
                             .resizable()
                             .frame(width: 28, height: 28)
                     }
-                }
-            }
-            
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    viewModel.deinitAudioService()
-                    onClose()
-                }) {
-                    Image(systemName: "xmark")
-                        .font(.title2)
-                        .foregroundStyle(.white)
                 }
             }
         }
