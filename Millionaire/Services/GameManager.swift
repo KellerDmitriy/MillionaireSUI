@@ -47,14 +47,14 @@ final class GameManager: ObservableObject {  // Управляет сессия�
             categoryID: categoryID,
             difficulty: .easy
         )
-
+print(categoryID)
         guard var session = GameSession(questions: easy) else {
             throw StartGameFailure.invalidQuestions
         }
 
         // Установим выбранную категорию
-//        let selectedCategory = try await getCategories().first(where: { $0.id == categoryID })
-//        session.updateSelectedCategory(selectedCategory)
+        let selectedCategory = try await getCategories().first(where: { $0.id == categoryID })
+        session.updateSelectedCategory(selectedCategory)
 
         self.currentSession = session
 
