@@ -100,6 +100,9 @@ struct CategoriesScreen: View {
         // Load categories when view appears
         .task {
             await viewModel.loadCategories()
+            if !viewModel.categories.isEmpty {
+                viewModel.isLoading = false
+            }
         }
     }
 

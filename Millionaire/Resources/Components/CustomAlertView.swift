@@ -19,6 +19,7 @@ struct CustomAlertView: View {
                 Spacer()
                 Text(message)
                     .millionaireTitleStyle()
+                    .lineLimit(3)
                     .multilineTextAlignment(.center)
                     .padding(.top, 50)
                 
@@ -31,28 +32,29 @@ struct CustomAlertView: View {
                             secondButtonAction?()
                         }
                         .millionaireStyle(.primary)
-                        .frame(width: 180, height: 50)
+                        .frame(height: 44)
                         
                         // Кнопка отмены
                         Button("Cancel") {
                             onDismiss()
                         }
                         .millionaireStyle(.regular)
-                        .frame(width: 180, height: 50)
+                        .frame(height: 44)
                     } else {
                         // Обычная кнопка "Ok"
                         Button("Ok") { onDismiss() }
                             .millionaireStyle(.primary)
-                            .frame(width: 180, height: 50)
+                            .frame(height: 44)
                     }
                 }
-                .padding()
                 .padding(.bottom, 50)
             }
+            .padding()
             .basicShadow()
             .background(Image(.background))
             .cornerRadius(20)
             .padding()
+          
         }
     }
 }

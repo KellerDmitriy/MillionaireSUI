@@ -27,13 +27,12 @@ final class CategoriesViewModel: ObservableObject {
         do {
             await MainActor.run { self.isLoading = true }
             try? await Task.sleep(nanoseconds: 500_000_000)
-            defer { Task { await MainActor.run { self.isLoading = false } } }
             
             // Fetch categories from the API
             let fetchedCategories = try await gameManager.getCategories()
             
             // Create a default "All Categories" item with nil id
-            let allCategories = QuestionCategory(id: nil, name: "All Categories")
+            let allCategories = QuestionCategory(id: 0, name: "All Categories")
             
             // Combine "All Categories" with fetched categories
             let all = [allCategories] + fetchedCategories
