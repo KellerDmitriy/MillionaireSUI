@@ -34,7 +34,7 @@ struct TimerView: View {
     
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: "timer")
+            Image(.timer)
                 .font(.system(size: 20, weight: .semibold))
             
             Text(duration)

@@ -14,7 +14,7 @@ struct CustomAlertView: View {
     var secondButtonAction: (() -> Void)?
     
     var body: some View {
-        ShadowedCardView(cornerRadius: 30) {
+        ZStack {
             VStack(spacing: 20) {
                 Spacer()
                 Text(message)
@@ -49,6 +49,10 @@ struct CustomAlertView: View {
                 .padding()
                 .padding(.bottom, 50)
             }
+            .basicShadow()
+            .background(Image(.background))
+            .cornerRadius(20)
+            .padding()
         }
     }
 }
@@ -66,42 +70,6 @@ struct CustomAlertView: View {
     )
 }
 
-struct ShadowedCardView<Content: View>: View {
-    // MARK: - Properties
-    let content: Content
-    let cornerRadius: CGFloat
-    let borderColor: Color
-    let borderWidth: CGFloat
-    
-    // MARK: - Initialization
-    init(
-        cornerRadius: CGFloat = 30,
-        borderColor: Color = .clear,
-        borderWidth: CGFloat = 0,
-        @ViewBuilder content: () -> Content
-    ) {
-        self.cornerRadius = cornerRadius
-        self.borderColor = borderColor
-        self.borderWidth = borderWidth
-        self.content = content()
-    }
-    
-    // MARK: - Body
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(.answerGradient3)
-                .basicShadow()
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(borderColor, lineWidth: borderWidth)
-                )
-            
-            content
-                .padding()
-        }
-    }
-}
 
 struct BasicShadowModifier: ViewModifier {
     enum Drawing {

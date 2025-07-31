@@ -66,3 +66,10 @@ struct QuestionCategory: Codable, Identifiable, Equatable, Hashable {
     let id: Int?
     let name: String
 }
+
+extension QuestionCategory {
+    var displayName: String {
+        // Разделяем по ": " и берём часть после, либо всё, если нет разделителя
+        name.components(separatedBy: ": ").last ?? name
+    }
+}

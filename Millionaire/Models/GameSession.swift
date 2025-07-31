@@ -21,8 +21,8 @@ struct FiftyFiftyLifelineResult {
 
 /// Результат подсказки помощь зала
 struct AudienceLifelineResult {
-    /// Выбор большинства в зале
-    let answer: String
+    /// проценты проголосовавших
+    let votesPerAnswer: [Int]
 }
 
 struct CallToFriendLifelineResult {
@@ -149,19 +149,22 @@ struct GameSession: Hashable, Codable {
         return FiftyFiftyLifelineResult(disabledAnswers: disabledAnswers)
     }
     
-    mutating func useAudienceLifeline() -> AudienceLifelineResult? {
+    mutating func useAudienceLifeline(allAnswers: [String]) -> AudienceLifelineResult? {
         guard canUse(lifeline: .audience) else {
             return nil
         }
         
         lifelines.remove(.audience)
         
-        // Зал должен ответить на вопрос правильно с вероятностью 70%
-        let isGuessCorrect = Int.random(in: 0..<100) < 70
+        guard let correctIndex = allAnswers.firstIndex(of: currentQuestion.correctAnswer) else {
+            assertionFailure("Correct answer not found!")
+            return nil
+        }
         
-        return AudienceLifelineResult(
-            answer: isGuessCorrect ? currentQuestion.correctAnswer : currentQuestion.incorrectAnswers.randomElement()!
-        )
+        let difficulty = currentQuestion.difficulty
+        print(correctIndex, difficulty)
+        let percentages = AudienceLifelineGenerator.generate(for: correctIndex, difficulty: difficulty)
+        return AudienceLifelineResult(votesPerAnswer: percentages)
     }
     
     ///  метод для подсказки "звонок другу"
@@ -173,20 +176,6 @@ struct GameSession: Hashable, Codable {
         }
     }
     
-//    mutating func useCallToFriendLifeline() -> CallToFriendLifelineResult? {
-//        guard canUse(lifeline: .callToFriend) else {
-//            return nil
-//        }
-//        
-//        lifelines.remove(.callToFriend)
-//        
-//        // Звонок другу с вероятностью 80% даст правильный ответ.
-//        let isGuessCorrect = Int.random(in: 0..<100) < 80
-//        
-//        return CallToFriendLifelineResult(
-//            answer: isGuessCorrect ? currentQuestion.correctAnswer : currentQuestion.incorrectAnswers.randomElement()!
-//        )
-//    }
     
     private func canUse(lifeline: Lifeline) -> Bool {
         guard !isFinished else {

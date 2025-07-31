@@ -14,6 +14,8 @@ struct GameScreen: View {
     @State private var showCustomAlert = false
     @State private var alertMessage = ""
     
+    @State private var showAudienceHelpView = false
+    
     //    MARK: Init
     init(viewModel: GameViewModel) {
         self.viewModel = viewModel
@@ -40,9 +42,16 @@ struct GameScreen: View {
             .padding(20)
         }
         .blur(radius: showCustomAlert ? 5 : 0)
+        .blur(radius: showAudienceHelpView ? 5 : 0)
         .onAppear {
             viewModel.startGame()
         }
+        
+        .onDisappear {
+            showCustomAlert = false
+            showAudienceHelpView = false
+        }
+        
         .onChange(of: scenePhase) { newPhase in
             switch newPhase {
             case .active:
@@ -63,7 +72,21 @@ struct GameScreen: View {
                             showCustomAlert = false
                         }
                     }
-                    .frame(width: 350, height: 500)
+                    .frame(width: 300, height: 450)
+                    .cornerRadius(20)
+                    .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+                    .zIndex(2)
+                }
+            }
+        )
+        
+        .overlay(
+            Group {
+                if showAudienceHelpView, let votes = viewModel.audienceVotes {
+                    AudienceHelpView(votesPerAnswer: votes) {
+                        withAnimation { showAudienceHelpView = false }
+                    }
+                    .frame(width: 300, height: 450)
                     .cornerRadius(20)
                     .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                     .zIndex(2)
@@ -165,9 +188,8 @@ struct GameScreen: View {
                 type: .audience,
                 action: {
                     viewModel.audienceButtonTap()
-                    alertMessage = "Аудитория выбрала:\n\(viewModel.answersForAudienceLifeline ?? "")"
                     withAnimation {
-                        showCustomAlert = true
+                        showAudienceHelpView = true
                     }
                 }
             )
