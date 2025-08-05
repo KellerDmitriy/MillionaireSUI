@@ -14,14 +14,14 @@
 ## 🚀 Начало работы
 
 ### Требования
-- Xcode 14.0+
+- Xcode 16.4+
 - iOS 16.0+
 - Swift 5.0+
 - Только iPhone (портретная ориентация)
 
 ### Установка
 ```bash
-git clone git@github.com:KellerDmitriy/millionaireForkVer.git
+git clone git@github.com:KellerDmitriy/MillionaireSUI.git
 cd millionaireForkVer
 open Millionaire.xcodeproj
 ```
