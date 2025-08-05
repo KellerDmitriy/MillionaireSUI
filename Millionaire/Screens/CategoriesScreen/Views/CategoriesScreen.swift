@@ -94,10 +94,7 @@ struct CategoriesScreen: View {
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                BackBarButtonView(onBack: {
-                    onClose()
-                }
-            )}
+                BackBarButtonView(onBack: {})}
         }
         // MARK: Subscriptions
         // Show alert when errorMessage changes

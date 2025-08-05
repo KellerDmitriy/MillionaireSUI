@@ -119,7 +119,7 @@ struct ScoreboardView: View {
                 }
             }
                 try? await Task.sleep(nanoseconds: 4_000_000_000)
-            if !showWithdrawalAlert {
+            if !showWithdrawalAlert && mode != .intermediate {
                 viewModel.deinitAudioService()
                 onClose()
             }
@@ -127,12 +127,16 @@ struct ScoreboardView: View {
         
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                if mode == .intermediate && !viewModel.gameSession.isFinished {
+                if mode == .roundWon && !viewModel.gameSession.isFinished {
                     Button(action: { showWithdrawalAlert = true }) {
                         Image("IconWithdrawal")
                             .resizable()
                             .frame(width: 28, height: 28)
                     }
+                }
+                
+                if mode == .intermediate {
+                    BackBarButtonView(onBack: { viewModel.deinitAudioService()})
                 }
             }
         }
@@ -202,7 +206,8 @@ struct ScoreboardView: View {
         
         ScoreboardView(
             session: session!,
-            mode: .victory,
+            mode: .roundWon
+,
             onAction: {
                 print("No action in game over")
             },

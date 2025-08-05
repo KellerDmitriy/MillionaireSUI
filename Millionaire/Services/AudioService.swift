@@ -13,6 +13,7 @@ protocol IAudioService {
     func playWrongAnswerSfx()
     func playCorrectAnswerSfx()
     func playAnswerLockedSfx()
+    func playVictorySfx()
     func stop()
     func pause()
     func resume()
@@ -26,6 +27,7 @@ final class AudioService: IAudioService {
         case wrongAnswerSfx
         case correctAnswerSfx
         case answerLockedSfx
+        case milionaireSfx
     }
     
     private var player: AVAudioPlayer?
@@ -91,6 +93,10 @@ final class AudioService: IAudioService {
     
     func playAnswerLockedSfx() {
         play(resource: .answerLockedSfx)
+    }
+    
+    func playVictorySfx() {
+        play(resource: .milionaireSfx)
     }
     
     func pause() {

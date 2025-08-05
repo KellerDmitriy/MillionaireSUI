@@ -94,6 +94,10 @@ struct GameSession: Hashable, Codable {
         score = amount
     }
     
+    mutating func finish() {
+        isFinished = true
+    }
+    
     /// Функция, возвращающая результат, был ответ верный или нет, и переходящая к следующему вопросу, если таковой есть
     mutating func answer(answer: String) -> AnswerResult? {
         // Проверяем, что игра не закончена

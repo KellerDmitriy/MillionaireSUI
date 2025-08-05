@@ -126,8 +126,8 @@ struct HomeView: View {
                     viewModel.showSettings
             ) {
                 Image(systemName: "gearshape.fill")
-                    .font(.title2)
                     .foregroundStyle(.white)
+                    .font(.title)
             }
             .padding(.top, 20)
             .padding(.leading, 20)
