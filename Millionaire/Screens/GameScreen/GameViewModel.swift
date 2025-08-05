@@ -13,7 +13,8 @@ import Combine
 extension GameViewModel {
     enum ScoreboardMode: Hashable, Equatable {
         case intermediate
-        case victory
+        case roundWon
+        case victoryMillionare
         case gameOver
     }
 }
@@ -97,7 +98,6 @@ final class GameViewModel: ObservableObject {
             .formatted()
     }
     
-    
     var lifelines: Set<Lifeline> { session.lifelines }
     
     //    MARK: Init
@@ -137,8 +137,13 @@ final class GameViewModel: ObservableObject {
     
     private func onTimeExpired() {
         audioService.playAnswerLockedSfx()
-        stopGameResources()
+        stopGame()
         
+        var newSession = session
+        let checkpoint = prizeCalculator.getCheckpointPrizeAmount(before: newSession.currentQuestionIndex)
+        newSession.setScore(checkpoint)
+        newSession.finish()
+        session = newSession
         //  Время вышло - показываем скорборд как поражение
         checkGameEnd(answerResult: .incorrect) // ответ не выбран
     }
@@ -282,14 +287,15 @@ final class GameViewModel: ObservableObject {
         if session.isFinished {
             if session.currentQuestionIndex == 14 {
                 print(" ПОБЕДА! Выигран миллион!")
-                mode = .victory
+                mode = .victoryMillionare
+
             } else {
                 print(" Игра окончена на вопросе \(session.currentQuestionIndex + 1)")
                 print(" Выигрыш: \(session.score) ")
                 mode = .gameOver
             }
         } else {
-            mode = .intermediate
+            mode = .roundWon
             print(" Выигрыш: \(session.score) ")
         }
         print(mode)
@@ -322,9 +328,7 @@ final class GameViewModel: ObservableObject {
                 votes[originalIndex] = result.votesPerAnswer[index]
             }
         }
-
         audienceVotes = votes
-        
     }
     
     func secondChanceButtonTap() {
@@ -335,7 +339,7 @@ final class GameViewModel: ObservableObject {
     }
     
     func testScoreboard() {
-        stopGameResources()
+        pauseGame()
         onNavigateToScoreboard?(session, .intermediate)
     }
 }

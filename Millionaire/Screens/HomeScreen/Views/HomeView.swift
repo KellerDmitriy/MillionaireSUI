@@ -44,8 +44,7 @@ struct HomeView: View {
     @StateObject private var navigationCoordinator = NavigationCoordinator()
     @StateObject private var viewModel: HomeViewModel
     @State private var showRules = false
-    
-    //@EnvironmentObject var gameManager: GameManager
+
     
     init(gameManager: GameManager) {
         let coordinator = NavigationCoordinator()
@@ -61,28 +60,31 @@ struct HomeView: View {
             ZStack {
                 AnimatedGradientBackgroundView()
                 
-                // Кнопка Rules
-                VStack {
-                    helpButton
-                    Spacer()
-                }
                 
                 VStack {
+                    HStack {
+                        settingsButton
+                        Spacer()
+                        helpButton
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top)
                     Spacer()
-                    
                     // Лого и название игры из ресурсов
                     logoAndScoreSection
-                    
                     Spacer()
-                    
                     // Кнопка New Game внизу
                     actionButtons
                 }
+                
+            
             }
+            
             .navigationBarHidden(true)
             .sheet(isPresented: $showRules) {
                 RulesView()
             }
+            
             .alert("Ошибка", isPresented: $viewModel.showError) {
                 Button("OK") { }
             } message: {
@@ -93,9 +95,11 @@ struct HomeView: View {
                 navigationCoordinator.destinationView(for: route)
             }
         }
+
         .onChange(of: navigationCoordinator.path) { newPath in
             viewModel.onNavigationChange(newPath)
         }
+
     }
     
     // MARK: - View Components
@@ -112,6 +116,21 @@ struct HomeView: View {
             }
             .padding(.top, 20)
             .padding(.trailing, 20)
+        }
+    }
+    
+    @ViewBuilder
+    private var settingsButton: some View {
+        HStack {
+            Button(action:
+                    viewModel.showSettings
+            ) {
+                Image(systemName: "gearshape.fill")
+                    .foregroundStyle(.white)
+                    .font(.title)
+            }
+            .padding(.top, 20)
+            .padding(.leading, 20)
         }
     }
     
@@ -192,9 +211,11 @@ struct HomeView: View {
 
 // MARK: - Preview
 #Preview("First Start") {
-    HomeView(
-        gameManager: GameManager()
-    )
+    NavigationView{
+        HomeView(
+            gameManager: GameManager()
+        )
+    }
 }
 
 #Preview("Second Start with Best Score") {

@@ -43,11 +43,14 @@ final class ScoreboardViewModel: ObservableObject {
     func playSound(mode: GameViewModel.ScoreboardMode) {
         switch mode {
         case .intermediate:
-            audioService.playCorrectAnswerSfx()
-        case .victory:
+            audioService.pause()
+        case .roundWon
+:
             audioService.playCorrectAnswerSfx()
         case .gameOver:
             audioService.playWrongAnswerSfx()
+        case .victoryMillionare:
+            audioService.playVictorySfx()
         }
     }
     

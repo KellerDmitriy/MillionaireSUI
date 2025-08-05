@@ -30,6 +30,10 @@ final class TimerService: ITimerService {
     private var total: Int = 0
     private var onComplete: (() -> Void)?
     
+    var remainingSeconds: Int {
+        return max(total - elapsed, 0)
+    }
+    
     // MARK: - Deinit
     deinit {
         // ВАЖНО! Обязательно останавливаем таймер

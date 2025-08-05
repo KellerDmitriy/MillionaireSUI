@@ -39,8 +39,7 @@ struct CategoriesScreen: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 85, height: 85)
-                        .padding(.top, 8)
-
+                      
                     // MARK: Categories List ScrollView
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 8) {
@@ -59,13 +58,15 @@ struct CategoriesScreen: View {
                         .padding(.top, 8)
                         .padding(.bottom, 50)
                     }
-
+                   
                     // MARK: Select Category Button
                     gameButton(title: "Select category", variant: .primary) {
                         onCategorySelectedID(viewModel.selectedCategoryID)
                     }
+                   
                     .padding()
                 }
+                .offset(y: -20)
                 .blur(radius: showAlert ? 5 : 0)
             }
 
@@ -91,7 +92,10 @@ struct CategoriesScreen: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
-
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackBarButtonView(onBack: {})}
+        }
         // MARK: Subscriptions
         // Show alert when errorMessage changes
         .onChange(of: viewModel.errorMessage) { newValue in
@@ -120,6 +124,8 @@ struct CategoriesScreen: View {
     }
 }
 #Preview {
-    CategoriesScreen(gameManager: GameManager()
-                     , onClose: {}, onCategorySelectedID: {_ in })
+    NavigationView {
+        CategoriesScreen(gameManager: GameManager()
+                         , onClose: {}, onCategorySelectedID: {_ in })
+    }
 }
