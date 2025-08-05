@@ -33,6 +33,7 @@ enum NavigationRoute: Hashable {
 @MainActor
 final class NavigationCoordinator: ObservableObject {
     @Published var path: [NavigationRoute] = []
+    private(set) var lastVisitedScreen: NavigationRoute?
     
     // Dependencies
     private weak var gameManager: GameManager?
@@ -51,14 +52,17 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func showCategories() {
+        lastVisitedScreen = .categories
         path.append(.categories)
     }
     
     func showGame(_ session: GameSession) {
+        lastVisitedScreen = .game(session)
         path = [.game(session)]
     }
     
     func showScoreboard(_ session: GameSession, mode: GameViewModel.ScoreboardMode) {
+        lastVisitedScreen = .scoreboard(session, mode)
         path.append(.scoreboard(session, mode))
     }
     
@@ -67,6 +71,7 @@ final class NavigationCoordinator: ObservableObject {
         //        if path.last?.isScoreboard == true {
         //            path.removeLast()
         //        }
+        lastVisitedScreen = .gameOver(session, mode)
         path.append(.gameOver(session, mode))
     }
     
@@ -140,13 +145,11 @@ final class NavigationCoordinator: ObservableObject {
                         self?.popToRoot()
                     },
                     onCategorySelectedID: { [weak self] selectedCategoryID in
-                        Task {
-                            await self?.homeViewModel?.startNewGameFlow(for: selectedCategoryID)
-                        }
+                        self?.homeViewModel?.checkCategorySelection(selectedCategoryID)
                     }
                 )
             }
-
+            
         case .game(let session):
             GameScreen(
                 viewModel: createGameViewModel(for: session)
@@ -186,7 +189,7 @@ final class NavigationCoordinator: ObservableObject {
                     self?.returnToMainScreenFromGameOver()
                 }
             )
-  
+            
         }
     }
     
@@ -211,10 +214,10 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func showGameOverAfterWithdrawal(_ session: GameSession) {
-//        // Убираем скорборд и показываем GameOver
-//        if path.last?.isScoreboard == true {
-//            path.removeLast()
-//        }
+        //        // Убираем скорборд и показываем GameOver
+        //        if path.last?.isScoreboard == true {
+        //            path.removeLast()
+        //        }
         
         // Показываем GameOver с режимом intermediate (забрали деньги)
         path.append(.gameOver(session, .intermediate))

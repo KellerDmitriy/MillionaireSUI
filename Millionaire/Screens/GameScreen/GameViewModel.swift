@@ -97,7 +97,6 @@ final class GameViewModel: ObservableObject {
             .formatted()
     }
     
-    
     var lifelines: Set<Lifeline> { session.lifelines }
     
     //    MARK: Init
@@ -137,7 +136,7 @@ final class GameViewModel: ObservableObject {
     
     private func onTimeExpired() {
         audioService.playAnswerLockedSfx()
-        stopGameResources()
+        stopGame()
         
         //  Время вышло - показываем скорборд как поражение
         checkGameEnd(answerResult: .incorrect) // ответ не выбран
@@ -322,9 +321,7 @@ final class GameViewModel: ObservableObject {
                 votes[originalIndex] = result.votesPerAnswer[index]
             }
         }
-
         audienceVotes = votes
-        
     }
     
     func secondChanceButtonTap() {

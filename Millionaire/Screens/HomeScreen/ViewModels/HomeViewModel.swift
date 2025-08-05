@@ -17,6 +17,7 @@ final class HomeViewModel: ObservableObject {
     @Published var showError: Bool = false
     @Published var errorMessage: String = ""
     
+    var categoryID: Int? = nil
     // MARK: - Dependencies
     private let storage: IStorageService
     private var gameManager: GameManager
@@ -49,7 +50,7 @@ final class HomeViewModel: ObservableObject {
     }
     
     func onNavigationChange(_ path: [NavigationRoute]) {
-        if path.isEmpty {
+        if path.isEmpty && navigationCoordinator.lastVisitedScreen != .categories {
             // Вернулись на главный экран
             updateViewState()
         }
@@ -73,6 +74,10 @@ final class HomeViewModel: ObservableObject {
         }
     }
     
+    func showSettings() {
+        navigationCoordinator.showCategories()
+    }
+    
     // MARK: - Withdrawal
     func withdrawAndEndGame() {
         // Завершаем текущую сессию с текущим счетом
@@ -82,7 +87,6 @@ final class HomeViewModel: ObservableObject {
             // Переходим к GameOver, а не на главный экран
             navigationCoordinator.showGameOverAfterWithdrawal(session)
         }
-    
     }
     
     // MARK: - Private Methods
@@ -100,18 +104,19 @@ final class HomeViewModel: ObservableObject {
     private func startGame(type: GameType) async {
         switch type {
         case .new:
-            navigationCoordinator.showCategories()
+            await startNewGameFlow()
             
         case .continued:
             continueExistingGame()
         }
     }
     
-    func startNewGameFlow(for categoryID: Int?) async {
+    func startNewGameFlow() async {
         navigationCoordinator.showLoading()
         isLoading = true
 
         do {
+            if categoryID == 0 { categoryID = nil }
             let session = try await gameManager.startNewGame(for: categoryID)
             try? await Task.sleep(nanoseconds: 500_000_000)
             navigationCoordinator.showGame(session)
@@ -158,4 +163,8 @@ final class HomeViewModel: ObservableObject {
         navigationCoordinator.showGame(session)
     }
     
+    func checkCategorySelection(_ categoryID: Int?) {
+        guard let categoryID = categoryID else { return }
+        self.categoryID = categoryID
+    }
 }

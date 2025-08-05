@@ -10,7 +10,7 @@ import Foundation
 final class CategoriesViewModel: ObservableObject {
     private let gameManager: GameManager
     
-    @Published var selectedCategoryID: Int?
+    @Published var selectedCategoryID: Int? = nil
     @Published var categories: [QuestionCategory] = []
     
     @Published var isLoading: Bool = false
