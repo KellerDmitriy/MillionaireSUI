@@ -11,7 +11,12 @@ import SwiftUI
 
 /// Static base URL for Open Trivia API (default with amount and type)
 enum QuestionsAPI {
-    static let baseURL = URL(string: "https://opentdb.com/api.php?amount=15&type=multiple")!
+    static var baseURL: URL {
+        guard let url = URL(string: "https://opentdb.com/api.php?amount=15&type=multiple") else {
+            fatalError("Invalid base URL")
+        }
+        return url
+    }
 }
 
 // MARK: - Difficulty

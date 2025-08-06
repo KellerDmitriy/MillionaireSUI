@@ -44,9 +44,9 @@ struct AudienceLifelineGenerator {
             .filter { $0 != correctAnswerIndex }
             .shuffled()                                        // Перемешиваем индексы неправильных ответов
 
-        for (i, index) in indices.enumerated() {
-            let isLast = i == indices.count - 1
-            let maxAllowed = max(1, remaining - (indices.count - i - 1)) // Минимум 1%, чтобы не получить 0
+        for (indexInLoop, index) in indices.enumerated() {
+            let isLast = indexInLoop == indices.count - 1
+            let maxAllowed = max(1, remaining - (indices.count - indexInLoop - 1)) // Минимум 1%, чтобы не получить 0
 
             let percent = isLast
                 ? remaining                                     // Последнему варианту отдаём остаток

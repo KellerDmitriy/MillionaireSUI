@@ -68,14 +68,14 @@ final class GameViewModel: ObservableObject {
     @Published private(set) var timerType: TimerType = .normal
     
     /// хранение версий от помощи зала в процентах
-    @Published var audienceVotes: [Int]? = nil
+    @Published var audienceVotes: [Int]?
     
     @Published var errorMessage: String = ""
     @Published var showError: Bool = false
     
     @Published var selectedAnswer: String?
     @Published var answerResultState: AnswerResult?
-    ///флаг, чтобы знать, была ли применена подсказка
+    /// флаг, чтобы знать, была ли применена подсказка
     @Published var mistakeAllowedUsed: Bool = false
     private var mistakeUsedThisTurn: Bool = false
     
@@ -87,7 +87,7 @@ final class GameViewModel: ObservableObject {
         answerProcessingTask?.cancel()
         
         // Когда GameViewModel уничтожается, все его свойства тоже
-        //Если при возврате назад нет этих сообщений - есть утечка!
+        // Если при возврате назад нет этих сообщений - есть утечка!
 #if DEBUG
         print(" GameViewModel деинициализирован")
 #endif
@@ -105,7 +105,7 @@ final class GameViewModel: ObservableObject {
     
     var lifelines: Set<Lifeline> { session.lifelines }
     
-    //    MARK: Init
+    // MARK: Init
     init(
         initialSession: GameSession,
         onSessionUpdated: @escaping (GameSession) -> Void = { _ in },
@@ -142,7 +142,6 @@ final class GameViewModel: ObservableObject {
         print("difficulty: \(session.currentQuestion.difficulty)")
         print("correctAnswer: \(session.currentQuestion.correctAnswer)")
     }
-    
     
     private func onTimeExpired() {
         audioService.playAnswerLockedSfx()
@@ -254,7 +253,6 @@ final class GameViewModel: ObservableObject {
         // Устанавливаем состояние результата для анимации
         answerResultState = answerResult == .incorrect && !mistakeUsedThisTurn ? .incorrect : .correct
 
-        
         // Ждём анимации результата
         do {
             try await Task.sleep(for: .seconds(2))

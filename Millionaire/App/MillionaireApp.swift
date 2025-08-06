@@ -1,4 +1,4 @@
-                    //
+//
 //  MillionaireApp.swift
 //  Millionaire
 //

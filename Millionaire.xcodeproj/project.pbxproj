@@ -91,6 +91,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 6B323FBE2E2DD05800B38734 /* Build configuration list for PBXNativeTarget "Millionaire" */;
 			buildPhases = (
+				79361D9E2E4394D60083BA53 /* ShellScript */,
 				6B323FAF2E2DD05700B38734 /* Sources */,
 				6B323FB02E2DD05700B38734 /* Frameworks */,
 				6B323FB12E2DD05700B38734 /* Resources */,
@@ -187,6 +188,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		79361D9E2E4394D60083BA53 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "echo \"🔎 SwiftLint started\"\necho \"📂 Current dir: $(pwd)\"\n\nif which swiftlint >/dev/null; then\n  swiftlint --config \"${SRCROOT}/.swiftlint.yml\"\nelse\n  echo \"warning: SwiftLint not installed. Download it from https://github.com/realm/SwiftLint\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		6B323FAF2E2DD05700B38734 /* Sources */ = {
@@ -344,6 +366,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 37KUSY2NJ4;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Millionaire/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -378,6 +401,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 37KUSY2NJ4;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Millionaire/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

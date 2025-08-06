@@ -1,11 +1,9 @@
-
 //
 //  ScoreboardRow.swift
 //  Millionaire
 //
 //  Created by Наташа Спиридонова on 24.07.2025.
 //
-
 
 import SwiftUI
 

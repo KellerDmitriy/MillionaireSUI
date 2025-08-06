@@ -107,7 +107,6 @@ struct ScoreboardView: View {
                 .zIndex(3)
             }
         }
-        
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .task {
@@ -126,15 +125,16 @@ struct ScoreboardView: View {
                 onClose()
             }
         }
-        
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 if mode == .roundWon && !viewModel.gameSession.isFinished {
-                    Button(action: { showWithdrawalAlert = true }) {
+                    Button(action: {
+                        showWithdrawalAlert = true
+                    }, label: {
                         Image("IconWithdrawal")
                             .resizable()
                             .frame(width: 44, height: 44)
-                    }
+                    })
                 }
                 
                 if mode == .intermediate {
@@ -146,43 +146,44 @@ struct ScoreboardView: View {
 }
 
 #Preview("Intermediate") {
-    let questions = (1...15).map { i in
+    let questions = (1...15).map { index in
         QuestionDTO(
             difficulty: .easy,
             category: "Общие знания",
-            question: "Вопрос?",
+            question: "Вопрос \(index)?",
             correctAnswer: "A",
             incorrectAnswers: ["B", "C", "D"]
         )
     }
-    let session = GameSession(questions: questions)
     
-    ScoreboardView(
-        session: session!,
+    guard let session = GameSession(questions: questions) else {
+        return Text("Invalid session")
+    }
+
+    return ScoreboardView(
+        session: session,
         mode: .intermediate,
-        onAction: {
-            print("Withdrawal action")
-        },
-        onClose: {
-            print("Close action")
-        }
+        onAction: { print("Withdrawal action") },
+        onClose: { print("Close action") }
     )
 }
 
 #Preview("Game Over") {
-    let questions = (1...15).map { i in
+    let questions = (1...15).map { index in
         QuestionDTO(
             difficulty: .easy,
             category: "Общие знания",
-            question: "Вопрос?",
+            question: "Вопрос \(index)?",
             correctAnswer: "A",
             incorrectAnswers: ["B", "C", "D"]
         )
     }
-    let session = GameSession(questions: questions)
+    guard let session = GameSession(questions: questions) else {
+        return Text("Invalid session")
+    }
     
-    ScoreboardView(
-        session: session!,
+    return ScoreboardView(
+        session: session,
         mode: .gameOver,
         onAction: {
             print("No action in game over")
@@ -194,28 +195,32 @@ struct ScoreboardView: View {
 }
 
 #Preview("Victory") {
-    NavigationView {
-        let questions = (1...15).map { i in
-            QuestionDTO(
-                difficulty: .easy,
-                category: "Общие знания",
-                question: "Вопрос?",
-                correctAnswer: "A",
-                incorrectAnswers: ["B", "C", "D"]
-            )
-        }
-        let session = GameSession(questions: questions)
-        
-        ScoreboardView(
-            session: session!,
-            mode: .roundWon
-,
-            onAction: {
-                print("No action in game over")
-            },
-            onClose: {
-                print("Close action")
-            }
+    let questions = (1...15).map { index in
+        QuestionDTO(
+            difficulty: .easy,
+            category: "Общие знания",
+            question: "Вопрос \(index)?",
+            correctAnswer: "A",
+            incorrectAnswers: ["B", "C", "D"]
         )
     }
+
+    guard let session = GameSession(questions: questions) else {
+        return AnyView(Text("Invalid session"))
+    }
+
+    return AnyView(
+        NavigationView {
+            ScoreboardView(
+                session: session,
+                mode: .roundWon,
+                onAction: {
+                    print("No action in game over")
+                },
+                onClose: {
+                    print("Close action")
+                }
+            )
+        }
+    )
 }
