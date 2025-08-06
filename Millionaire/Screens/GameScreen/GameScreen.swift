@@ -41,6 +41,7 @@ struct GameScreen: View {
             .allowsHitTesting(viewModel.selectedAnswer == nil)
             .padding(20)
         }
+        
         .blur(radius: showCustomAlert ? 5 : 0)
         .blur(radius: showAudienceHelpView ? 5 : 0)
         .onAppear {
@@ -62,6 +63,7 @@ struct GameScreen: View {
                 break
             }
         }
+
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .overlay(
@@ -90,7 +92,19 @@ struct GameScreen: View {
                 }
             }
         )
-        
+        .overlay(
+            Group {
+                if viewModel.showError {
+                    CustomAlertView(message: viewModel.errorMessage ) {
+                        withAnimation(.easeInOut) {
+                            viewModel.showError = false
+                        }
+                    }
+                    .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+                    .zIndex(2)
+                }
+            }
+        )
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 BackBarButtonView(
@@ -245,7 +259,7 @@ struct GameScreen: View {
                         repeating: QuestionDTO(difficulty: .easy, category: "aaa", question: "Как дела?", correctAnswer: "Хорошо", incorrectAnswers: Array(repeating: "Плохо", count: 3)),
                         count: 15
                     )
-                )!
+                )!, gameManager: GameManager()
             )
         )
     }

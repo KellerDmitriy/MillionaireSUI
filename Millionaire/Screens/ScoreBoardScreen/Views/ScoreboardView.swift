@@ -93,9 +93,12 @@ struct ScoreboardView: View {
                 CustomAlertView(
                     message: "You lost. Your prize is $0.",
                     onDismiss: {
-                        showGameOverZeroAlert = false
-                        viewModel.deinitAudioService()
-                        onClose()
+                        withAnimation {
+                            showGameOverZeroAlert = false
+                            
+                            viewModel.deinitAudioService()
+                            onClose()
+                        }
                     },
                     showSecondButton: false
                 )
@@ -103,7 +106,6 @@ struct ScoreboardView: View {
                 .cornerRadius(20)
                 .zIndex(3)
             }
-            
         }
         
         .navigationBarTitleDisplayMode(.inline)
@@ -119,7 +121,7 @@ struct ScoreboardView: View {
                 }
             }
                 try? await Task.sleep(nanoseconds: 4_000_000_000)
-            if !showWithdrawalAlert && mode != .intermediate {
+            if !showGameOverZeroAlert && !showWithdrawalAlert && mode != .intermediate {
                 viewModel.deinitAudioService()
                 onClose()
             }
@@ -131,7 +133,7 @@ struct ScoreboardView: View {
                     Button(action: { showWithdrawalAlert = true }) {
                         Image("IconWithdrawal")
                             .resizable()
-                            .frame(width: 28, height: 28)
+                            .frame(width: 44, height: 44)
                     }
                 }
                 

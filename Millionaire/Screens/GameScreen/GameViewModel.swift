@@ -23,9 +23,11 @@ extension GameViewModel {
 final class GameViewModel: ObservableObject {
     
     // MARK: - Services
-    let timerService: ITimerService
-    let audioService: IAudioService
+    
+    private let timerService: ITimerService
+    private let audioService: IAudioService
     private let storage: IStorageService
+    private let gameManager: GameManager
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -68,6 +70,9 @@ final class GameViewModel: ObservableObject {
     /// хранение версий от помощи зала в процентах
     @Published var audienceVotes: [Int]? = nil
     
+    @Published var errorMessage: String = ""
+    @Published var showError: Bool = false
+    
     @Published var selectedAnswer: String?
     @Published var answerResultState: AnswerResult?
     ///флаг, чтобы знать, была ли применена подсказка
@@ -106,12 +111,14 @@ final class GameViewModel: ObservableObject {
         onSessionUpdated: @escaping (GameSession) -> Void = { _ in },
         onGameFinished: (() -> Void)? = nil,
         onNavigateToScoreboard: ((GameSession, ScoreboardMode) -> Void)? = nil,
+        gameManager: GameManager,
         audioService: IAudioService = AudioService.shared,
         storage: IStorageService = StorageService.shared,
         timerService: ITimerService = TimerService()
     ) {
         self.session = initialSession
         self.onSessionUpdated = onSessionUpdated
+        self.gameManager = gameManager
         self.audioService = audioService
         self.storage = storage
         self.timerService = timerService
@@ -132,8 +139,10 @@ final class GameViewModel: ObservableObject {
         timerService.start30SecondTimer { [weak self] in
             self?.onTimeExpired()
         }
-        print(session.currentQuestion.correctAnswer)
+        print("difficulty: \(session.currentQuestion.difficulty)")
+        print("correctAnswer: \(session.currentQuestion.correctAnswer)")
     }
+    
     
     private func onTimeExpired() {
         audioService.playAnswerLockedSfx()
@@ -155,21 +164,11 @@ final class GameViewModel: ObservableObject {
     
     // MARK: - Timer Binding
     private func bindTimer() {
-        timerService.progressPublisher
-            .map { progress -> (String, TimerType) in
-                let totalSeconds = 30
-                let elapsed = Int(Float(totalSeconds) * progress)
-                let remaining = max(0, totalSeconds - elapsed)
-                let minutes = remaining / 60
-                let seconds = remaining % 60
-                let formatted = String(format: "%02d:%02d", minutes, seconds)
-                let type = TimerType.getType(for: remaining)
-                return (formatted, type)
-            }
+        timerService.displayPublisher
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] formatted, type in
-                self?.duration = formatted
-                self?.timerType = type
+            .sink { [weak self] displayData in
+                self?.duration = displayData.formattedTime
+                self?.timerType = displayData.type
             }
             .store(in: &cancellables)
     }
@@ -267,6 +266,8 @@ final class GameViewModel: ObservableObject {
             // Проверяем окончание игры
             if answerResult == .correct && !session.isFinished {
                 // Подготовка следующего вопроса
+                prepareNextQuestionIfNeeded()
+                
                 selectedAnswer = nil  // <-- переносим сюда
                 answerResultState = nil
                 correctAnswer = nil
@@ -342,6 +343,36 @@ final class GameViewModel: ObservableObject {
         pauseGame()
         onNavigateToScoreboard?(session, .intermediate)
     }
+    
+    private func prepareNextQuestionIfNeeded() {
+        // Определяем текущую и следующую сложность
+        let nextDifficulty: QuestionDifficulty
+        
+        switch numberQuestion {
+        case 0..<5:
+            nextDifficulty = .medium // готовим medium, потому что easy уже есть
+        case 5..<10:
+            nextDifficulty = .hard
+        default:
+            return // hard уже последний блок, дальше не грузим
+        }
+        
+        // Проверяем, догружали ли мы уже эти вопросы
+        let existingCount = session.questions.filter { $0.difficulty == nextDifficulty }.count
+        
+        if existingCount == 0 { // ещё не грузили этот блок
+            Task {
+                do {
+                    let newQuestions = try await gameManager.fetchQuestions(for: nextDifficulty)
+                    session.appendQuestions(newQuestions)
+                } catch {
+                    print("Ошибка догрузки вопросов: \(error)")
+                    showError = true
+                    errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
 }
 
 private extension GameQuestion {
@@ -371,7 +402,10 @@ extension GameViewModel {
     
     /// Полностью останавливает игру (при выходе)
     func stopGame() {
-        answerProcessingTask?.cancel()
         stopGameResources()
+        answerProcessingTask?.cancel()
+        session.finish()
+        onGameFinished?()
+        storage.clearSavedSession()
     }
 }

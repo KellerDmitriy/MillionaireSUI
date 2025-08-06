@@ -32,11 +32,9 @@ struct CallToFriendLifelineResult {
 
 /// Модель игры с полной логикой обновления её состояния
 struct GameSession: Hashable, Codable {
-    /// уровни сложности
-    private(set) var loadedDifficulties: Set<QuestionDifficulty> = [.easy]
     
     /// Выбранная категория
-    var selectedCategory: QuestionCategory? = nil
+    private(set) var selectedCategory: QuestionCategory? = nil
     
     /// Массив вопросов
     private(set) var questions: [GameQuestion]
@@ -76,19 +74,23 @@ struct GameSession: Hashable, Codable {
         self.lifelines = [.fiftyFifty, .secondChance, .audience]
     }
     
-    mutating func appendQuestions(_ newQuestions: [QuestionDTO], difficulty: QuestionDifficulty) {
+    mutating func appendQuestions(_ newQuestions: [QuestionDTO]) {
         let cleanedQuestions: [GameQuestion] = newQuestions.map { $0.cleaned() }
-        questions.append(contentsOf: cleanedQuestions)
-        loadedDifficulties.insert(difficulty)
+        self.questions.append(contentsOf: cleanedQuestions)
     }
     
     mutating func addScore(_ amount: Int) {
         score += amount
     }
     
+    func getCurrentCategory() -> QuestionCategory? {
+        selectedCategory
+    }
+    
     mutating func updateSelectedCategory(_ category: QuestionCategory?) {
         selectedCategory = category
     }
+    
     
     mutating func setScore(_ amount: Int) {
         score = amount
@@ -171,7 +173,7 @@ struct GameSession: Hashable, Codable {
         return AudienceLifelineResult(votesPerAnswer: percentages)
     }
     
-    ///  метод для подсказки "звонок другу"
+    ///  метод для подсказки "Право на ошибку"
     mutating func useLifeline(_ lifeline: Lifeline) {
         lifelines.remove(lifeline)
         if lifeline == .secondChance {
