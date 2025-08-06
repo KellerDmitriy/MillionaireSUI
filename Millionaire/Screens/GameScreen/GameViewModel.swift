@@ -27,7 +27,6 @@ final class GameViewModel: ObservableObject {
     private let timerService: ITimerService
     private let audioService: IAudioService
     private let storage: IStorageService
-    private let gameManager: GameManager
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -111,14 +110,12 @@ final class GameViewModel: ObservableObject {
         onSessionUpdated: @escaping (GameSession) -> Void = { _ in },
         onGameFinished: (() -> Void)? = nil,
         onNavigateToScoreboard: ((GameSession, ScoreboardMode) -> Void)? = nil,
-        gameManager: GameManager,
         audioService: IAudioService = AudioService.shared,
         storage: IStorageService = StorageService.shared,
         timerService: ITimerService = TimerService()
     ) {
         self.session = initialSession
         self.onSessionUpdated = onSessionUpdated
-        self.gameManager = gameManager
         self.audioService = audioService
         self.storage = storage
         self.timerService = timerService
@@ -139,6 +136,7 @@ final class GameViewModel: ObservableObject {
         timerService.start30SecondTimer { [weak self] in
             self?.onTimeExpired()
         }
+        print("category: \(String(describing: session.getCurrentCategory()?.name))")
         print("difficulty: \(session.currentQuestion.difficulty)")
         print("correctAnswer: \(session.currentQuestion.correctAnswer)")
     }

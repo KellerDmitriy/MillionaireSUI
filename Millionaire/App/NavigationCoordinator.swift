@@ -147,11 +147,10 @@ final class NavigationCoordinator: ObservableObject {
             }
             
         case .game(let session):
-            if let gameManager {
                 GameScreen(
-                    viewModel: createGameViewModel(for: session, gameManager: gameManager)
+                    viewModel: createGameViewModel(for: session)
                 )
-            }
+    
         case .scoreboard(let session, let mode):
             ScoreboardView(
                 session: session,
@@ -191,7 +190,7 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     // MARK: - ViewModels Factory
-    private func createGameViewModel(for session: GameSession, gameManager: GameManager) -> GameViewModel {
+    private func createGameViewModel(for session: GameSession) -> GameViewModel {
         GameViewModel(
             initialSession: session,
             onSessionUpdated: { [weak self] updatedSession in
@@ -206,7 +205,7 @@ final class NavigationCoordinator: ObservableObject {
             onNavigateToScoreboard: { [weak self] session, mode in
                 // Добавляем скорборд в навигацию
                 self?.showScoreboard(session, mode: mode)
-            }, gameManager: gameManager
+            },
         )
     }
     
