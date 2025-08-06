@@ -60,7 +60,6 @@ struct HomeView: View {
             ZStack {
                 AnimatedGradientBackgroundView()
                 
-                
                 VStack {
                     HStack {
                         settingsButton
@@ -76,16 +75,13 @@ struct HomeView: View {
                     // Кнопка New Game внизу
                     actionButtons
                 }
-                
-            
             }
-            
             .navigationBarHidden(true)
             .sheet(isPresented: $showRules) {
                 RulesView()
             }
             
-            .alert("Ошибка", isPresented: $viewModel.showError) {
+            .alert("Warning", isPresented: $viewModel.showError) {
                 Button("OK") { }
             } message: {
                 Text(viewModel.errorMessage)

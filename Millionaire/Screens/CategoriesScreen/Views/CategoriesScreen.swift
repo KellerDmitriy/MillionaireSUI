@@ -9,17 +9,14 @@ import SwiftUI
 struct CategoriesScreen: View {
     @ObservedObject var viewModel: CategoriesViewModel
 
-    let onClose: () -> Void
     let onCategorySelectedID: (Int?) -> Void
 
     @State private var showAlert = false
 
     // MARK: - Initialization
     init(gameManager: GameManager,
-         onClose: @escaping () -> Void,
          onCategorySelectedID: @escaping (Int?) -> Void) {
         self.viewModel = CategoriesViewModel(gameManager: gameManager)
-        self.onClose = onClose
         self.onCategorySelectedID = onCategorySelectedID
     }
 
@@ -126,6 +123,6 @@ struct CategoriesScreen: View {
 #Preview {
     NavigationView {
         CategoriesScreen(gameManager: GameManager()
-                         , onClose: {}, onCategorySelectedID: {_ in })
+                         , onCategorySelectedID: {_ in })
     }
 }

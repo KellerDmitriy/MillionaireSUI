@@ -141,9 +141,6 @@ final class NavigationCoordinator: ObservableObject {
             if let gameManager {
                 CategoriesScreen(
                     gameManager: gameManager,
-                    onClose: { [weak self] in
-                        self?.popToRoot()
-                    },
                     onCategorySelectedID: { [weak self] selectedCategoryID in
                         self?.homeViewModel?.checkCategorySelection(selectedCategoryID)
                     }
@@ -151,10 +148,11 @@ final class NavigationCoordinator: ObservableObject {
             }
             
         case .game(let session):
-            GameScreen(
-                viewModel: createGameViewModel(for: session)
-            )
-            
+            if let gameManager {
+                GameScreen(
+                    viewModel: createGameViewModel(for: session, gameManager: gameManager)
+                )
+            }
         case .scoreboard(let session, let mode):
             ScoreboardView(
                 session: session,
@@ -194,7 +192,7 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     // MARK: - ViewModels Factory
-    private func createGameViewModel(for session: GameSession) -> GameViewModel {
+    private func createGameViewModel(for session: GameSession, gameManager: GameManager) -> GameViewModel {
         GameViewModel(
             initialSession: session,
             onSessionUpdated: { [weak self] updatedSession in
@@ -209,7 +207,7 @@ final class NavigationCoordinator: ObservableObject {
             onNavigateToScoreboard: { [weak self] session, mode in
                 // Добавляем скорборд в навигацию
                 self?.showScoreboard(session, mode: mode)
-            }
+            }, gameManager: gameManager
         )
     }
     

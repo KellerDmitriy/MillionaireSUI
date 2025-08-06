@@ -5,111 +5,93 @@
 //  Created by Келлер Дмитрий on 25.07.2025.
 //
 
-import Foundation
 import Combine
-
-// MARK: - Protocol
+import Foundation
 
 protocol ITimerService {
-    var progressPublisher: Published<Float>.Publisher { get }
+    var displayPublisher: Published<TimerDisplayData>.Publisher { get }
+    var totalSeconds: Int { get }
+    
     func start30SecondTimer(completion: @escaping () -> Void)
     func pauseTimer()
-    func stopTimer()
     func resumeTimer()
+    func stopTimer()
 }
-
-// MARK: - Implementation
 
 final class TimerService: ITimerService {
     
-    @Published var progress: Float = 0.0
-    var progressPublisher: Published<Float>.Publisher { $progress }
+    @Published private(set) var displayData: TimerDisplayData = TimerDisplayData(formattedTime: "00:00", type: .normal)
+    @Published private(set) var progress: Float = 1.0 // 100% в начале (30 сек)
     
-    private var timer: Timer?
-    private var elapsed: Int = 0
-    private var total: Int = 0
+    var displayPublisher: Published<TimerDisplayData>.Publisher { $displayData }
+  
+    private(set) var totalSeconds: Int = 0
+    private var remaining: Int = 0
     private var onComplete: (() -> Void)?
     
-    var remainingSeconds: Int {
-        return max(total - elapsed, 0)
-    }
-    
-    // MARK: - Deinit
-    deinit {
-        // ВАЖНО! Обязательно останавливаем таймер
-        timer?.invalidate()
-        timer = nil
-        
-        //Если при возврате назад нет этих сообщений - есть утечка!
-#if DEBUG
-        print("TimerService деинициализирован")
-#endif
-    }
+    private var cancellable: AnyCancellable?
+    private var isPaused = false
     
     // MARK: - Public API
     func start30SecondTimer(completion: @escaping () -> Void) {
-        configureTimer(totalSeconds: 30, updateProgress: true, completion: completion)
+        startTimer(seconds: 30, completion: completion)
     }
     
+    private func startTimer(seconds: Int, completion: @escaping () -> Void) {
+        stopTimer()
+        totalSeconds = seconds
+        remaining = seconds
+        updateDisplay()
+        onComplete = completion
+        startPublisher()
+    }
     
     func pauseTimer() {
-        guard timer != nil else { return }
-        
-        timer?.invalidate()
-        timer = nil
+        cancellable?.cancel()
+        cancellable = nil
+        isPaused = true
     }
     
     func resumeTimer() {
-        // Возобновляем с текущего места
-        guard timer == nil, total > 0, elapsed < total else { return }
-        
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            self.elapsed += 1
-            self.progress = Float(self.elapsed) / Float(self.total)
-            
-            if self.elapsed >= self.total {
-                self.stopTimer()
-                self.onComplete?()
-            }
-        }
+        guard isPaused, remaining > 0 else { return }
+        startPublisher()
+        isPaused = false
     }
     
     func stopTimer() {
-        timer?.invalidate()
-        timer = nil
-        progress = 0.0
-        elapsed = 0
-        total = 0
+        cancellable?.cancel()
+        cancellable = nil
+        remaining = 0
+        totalSeconds = 0
+        progress = 1.0
+        updateDisplay()
+        isPaused = false
     }
     
     // MARK: - Private
-    private func configureTimer(totalSeconds: Int, updateProgress: Bool, completion: @escaping () -> Void) {
-        stopTimer()
-        self.elapsed = 0
-        self.total = totalSeconds
-        self.onComplete = completion
-        
-        if updateProgress {
-            self.progress = 0
-        }
-        
-        // Timer держит RunLoop
-        // он добавляется в главный RunLoop
-        // RunLoop держит сильную ссылку на Timer ->
-        // Timer может пережить этот TimerService сервис!
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            self.elapsed += 1
-            
-            if updateProgress {
-                self.progress = Float(self.elapsed) / Float(self.total)
+    private func startPublisher() {
+        cancellable = Timer
+            .publish(every: 1, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                guard let self else { return }
+                
+                remaining -= 1
+                progress = Float(remaining) / Float(totalSeconds)
+                updateDisplay()
+                
+                if remaining <= 0 {
+                    stopTimer()
+                    onComplete?()
+                }
             }
-            
-            if self.elapsed >= self.total {
-                self.stopTimer()
-                self.onComplete?()
-            }
-        }
+    }
+    
+    private func updateDisplay() {
+        let minutes = remaining / 60
+        let seconds = remaining % 60
+        let formatted = String(format: "%02d:%02d", minutes, seconds)
+        let type = TimerType.getType(for: remaining)
+        displayData = TimerDisplayData(formattedTime: formatted, type: type)
     }
 }

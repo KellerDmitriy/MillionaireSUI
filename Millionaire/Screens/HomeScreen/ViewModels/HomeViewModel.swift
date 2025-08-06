@@ -122,7 +122,7 @@ final class HomeViewModel: ObservableObject {
             navigationCoordinator.showGame(session)
         } catch {
             navigationCoordinator.popToRoot()
-            errorMessage = "Не удалось загрузить вопросы. Проверьте интернет-соединение."
+            errorMessage = "Failed to load questions. Please check your internet connection."
             showError = true
         }
 
@@ -146,7 +146,7 @@ final class HomeViewModel: ObservableObject {
         } catch {
             // При ошибке возвращаемся на главный
             navigationCoordinator.popToRoot()
-            errorMessage = "Не удалось загрузить вопросы. Проверьте интернет-соединение."
+            errorMessage = "Failed to load questions. Please check your internet connection."
             showError = true
         }
         
@@ -155,7 +155,7 @@ final class HomeViewModel: ObservableObject {
     
     private func continueExistingGame() {
         guard let session = gameManager.currentSession, !session.isFinished else {
-            errorMessage = "Нет активной игры для продолжения"
+            errorMessage = "No active game to continue"
             showError = true
             return
         }
