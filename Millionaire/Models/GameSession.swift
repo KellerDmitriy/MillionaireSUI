@@ -87,6 +87,10 @@ struct GameSession: Hashable, Codable {
         selectedCategory
     }
     
+    func getQuestionCount() -> Int {
+        questions.count
+    }
+    
     mutating func updateSelectedCategory(_ category: QuestionCategory?) {
         selectedCategory = category
     }
@@ -189,7 +193,6 @@ struct GameSession: Hashable, Codable {
         guard lifelines.contains(lifeline) else {
             return false
         }
-        
         return true
     }
 }

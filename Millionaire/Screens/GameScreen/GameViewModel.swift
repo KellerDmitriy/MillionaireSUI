@@ -263,9 +263,7 @@ final class GameViewModel: ObservableObject {
             
             // Проверяем окончание игры
             if answerResult == .correct && !session.isFinished {
-                // Подготовка следующего вопроса
-                prepareNextQuestionIfNeeded()
-                
+                // Подготовка следующего вопрос
                 selectedAnswer = nil  // <-- переносим сюда
                 answerResultState = nil
                 correctAnswer = nil
@@ -340,36 +338,6 @@ final class GameViewModel: ObservableObject {
     func testScoreboard() {
         pauseGame()
         onNavigateToScoreboard?(session, .intermediate)
-    }
-    
-    private func prepareNextQuestionIfNeeded() {
-        // Определяем текущую и следующую сложность
-        let nextDifficulty: QuestionDifficulty
-        
-        switch numberQuestion {
-        case 0..<5:
-            nextDifficulty = .medium // готовим medium, потому что easy уже есть
-        case 5..<10:
-            nextDifficulty = .hard
-        default:
-            return // hard уже последний блок, дальше не грузим
-        }
-        
-        // Проверяем, догружали ли мы уже эти вопросы
-        let existingCount = session.questions.filter { $0.difficulty == nextDifficulty }.count
-        
-        if existingCount == 0 { // ещё не грузили этот блок
-            Task {
-                do {
-                    let newQuestions = try await gameManager.fetchQuestions(for: nextDifficulty)
-                    session.appendQuestions(newQuestions)
-                } catch {
-                    print("Ошибка догрузки вопросов: \(error)")
-                    showError = true
-                    errorMessage = error.localizedDescription
-                }
-            }
-        }
     }
 }
 

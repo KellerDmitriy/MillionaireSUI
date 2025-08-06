@@ -42,17 +42,44 @@ final class GameManager: ObservableObject {  // Управляет сессия�
 
     /// Начинает новую игру
     func startNewGame(for categoryID: Int?) async throws -> GameSession {
+        let categoryID = try validateCategory(categoryID)
+        
+        let session = try await createInitialSession(for: categoryID)
+        
+//        startBackgroundLoading(for: categoryID)
+        
+        return session
+    }
+    
+    //MARK: - Helper Methods
+    private func validateCategory(_ categoryID: Int?) throws -> Int {
+        guard let categoryID = categoryID else {
+            throw StartGameFailure.invalidCategory
+        }
+        return categoryID
+    }
+    
+    ///Проверка доступного количества вопросов
+    private func validateQuestionAvailability(for categoryID: Int, questions: [QuestionDTO]) async throws {
+        let count = questions.count
+        
+        guard count < 15 else {
+            throw StartGameFailure.notEnoughQuestions
+        }
+    }
+    
+    /// Создание сессии с easy-вопросами
+    private func createInitialSession(for categoryID: Int) async throws -> GameSession {
         let easy = try await questionRepository.fetchQuestions(
             amount: 5,
             categoryID: categoryID,
             difficulty: .easy
         )
-    
+        
         guard var session = GameSession(questions: easy) else {
             throw StartGameFailure.invalidQuestions
         }
         
-        // Установим выбранную категорию
         let selectedCategory = try await getCategories().first(where: { $0.id == categoryID })
         session.updateSelectedCategory(selectedCategory)
         
@@ -61,17 +88,34 @@ final class GameManager: ObservableObject {  // Управляет сессия�
         return session
     }
     
-    /// догружаем вопросы текущего уровня сложности
-    func fetchQuestions(for difficulty: QuestionDifficulty) async throws -> [QuestionDTO] {
-        let currentCategory = currentSession?.getCurrentCategory()
-        return try await questionRepository.fetchQuestions(
-            amount: 5,
-            categoryID: currentCategory?.id,
-            difficulty: difficulty
-        )
-  
+    /// Фоновая догрузка medium и hard
+    private func startBackgroundLoading(for categoryID: Int) {
+    Task.detached(priority: .background) { [weak self] in
+        guard let self = self else { return }
+        do {
+            try await Task.sleep(nanoseconds: 5_000_000_000) // Rate Limit
+            
+            let medium = try await self.questionRepository.fetchQuestions(
+                amount: 5,
+                categoryID: categoryID,
+                difficulty: .medium
+            )
+            
+            try await Task.sleep(nanoseconds: 5_000_000_000)
+            
+            let hard = try await self.questionRepository.fetchQuestions(
+                amount: 5,
+                categoryID: categoryID,
+                difficulty: .hard
+            )
+            await MainActor.run {
+                self.currentSession?.appendQuestions(medium + hard)
+            }
+        } catch {
+            throw StartGameFailure.notEnoughQuestions
+        }
     }
-    
+}
     /// Восстанавливает сохранённую сессию
     func restoreSession(_ session: GameSession) {
         Task {
@@ -96,6 +140,8 @@ final class GameManager: ObservableObject {  // Управляет сессия�
 private extension GameManager {
     enum StartGameFailure: Error {
         case invalidQuestions
+        case invalidCategory
+        case notEnoughQuestions
     }
 }
 
