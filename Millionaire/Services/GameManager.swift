@@ -43,7 +43,6 @@ final class GameManager: ObservableObject {  // Управляет сессия�
     /// Начинает новую игру
     func startNewGame(for categoryID: Int?) async throws -> GameSession {
       
-        
         let session = try await createInitialSession(for: categoryID)
         
         startBackgroundLoading(for: categoryID)
@@ -51,8 +50,8 @@ final class GameManager: ObservableObject {  // Управляет сессия�
         return session
     }
     
-    //MARK: - Helper Methods
-    /// Создание сессии с easy-вопросами
+    // MARK: - Helper Methods
+    // Создание сессии с easy-вопросами
     private func createInitialSession(for categoryID: Int?) async throws -> GameSession {
         let easy = try await questionRepository.fetchQuestions(
             amount: 5,
