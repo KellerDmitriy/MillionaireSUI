@@ -17,7 +17,7 @@ final class HomeViewModel: ObservableObject {
     @Published var showError: Bool = false
     @Published var errorMessage: String = ""
     
-    var categoryID: Int? = nil
+    var categoryID: Int?
     // MARK: - Dependencies
     private let storage: IStorageService
     private var gameManager: GameManager

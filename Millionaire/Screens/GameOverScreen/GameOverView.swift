@@ -52,7 +52,7 @@ struct GameOverView: View {
                         .foregroundStyle(.white.opacity(0.6))
                         .font(Font.custom("SF Compact Display", size: 16))
                         .fontWeight(.regular)
-                    HStack() {
+                    HStack {
                         Text("$\(session.score.formatted())")
                             .foregroundStyle(.white)
                             .font(Font.custom("SF Compact Display", size: 24))
@@ -92,15 +92,27 @@ struct GameOverView: View {
 }
 
 #Preview {
-    GameOverView(
-        session: GameSession(
-            questions: Array(
-                repeating: QuestionDTO(difficulty: .easy, category: "aaa", question: "Как дела?", correctAnswer: "Хорошо", incorrectAnswers: Array(repeating: "Плохо", count: 3)),
-                count: 15
-            )
-        )!,
-        mode: .gameOver,
-        onNewGame: { print("New game") },
-        onMainScreen: { print("Main screen") }
+    let questions = Array(
+        repeating: QuestionDTO(
+            difficulty: .easy,
+            category: "aaa",
+            question: "Как дела?",
+            correctAnswer: "Хорошо",
+            incorrectAnswers: Array(repeating: "Плохо", count: 3)
+        ),
+        count: 15
+    )
+    
+    guard let session = GameSession(questions: questions) else {
+        return AnyView(Text("Ошибка: GameSession не инициализирован"))
+    }
+    
+    return AnyView(
+        GameOverView(
+            session: session,
+            mode: .gameOver,
+            onNewGame: { print("New game") },
+            onMainScreen: { print("Main screen") }
+        )
     )
 }

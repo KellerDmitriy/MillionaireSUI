@@ -10,7 +10,7 @@ import SwiftUI
 //
 // Поток навигации:
 //
-//HomeView
+// HomeView
 //    ├── LoadingView
 //    ├── GameScreen
 //    │   └── ScoreboardView (через toolbar button)
@@ -112,8 +112,7 @@ final class NavigationCoordinator: ObservableObject {
         // Специальный метод для прямого перехода к новой игре
         homeViewModel?.startNewGameDirect()
     }
-    
-    
+
     func returnToMainScreenFromGameOver() {
         // Просто возвращаемся на главный экран
         popToRoot()

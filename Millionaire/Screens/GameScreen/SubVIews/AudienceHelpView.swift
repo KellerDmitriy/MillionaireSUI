@@ -5,7 +5,6 @@
 //  Created by Келлер Дмитрий on 31.07.2025.
 //
 
-
 import SwiftUI
 
 struct AudienceHelpView: View {

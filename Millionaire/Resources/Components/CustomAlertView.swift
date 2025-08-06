@@ -86,7 +86,6 @@ struct CustomAlertView: View {
     )
 }
 
-
 struct BasicShadowModifier: ViewModifier {
     enum Drawing {
         static let shadowRadius: CGFloat = 15

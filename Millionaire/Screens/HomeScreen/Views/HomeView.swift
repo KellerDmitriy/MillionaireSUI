@@ -16,8 +16,7 @@ enum HomeViewMode {
     init(hasActiveSession: Bool, hasScore: Bool) {
         if hasActiveSession {
             self = .notCompletedGame
-        }
-        else {
+        } else {
             self = hasScore ? .secondStart : .firstStart
         }
     }
@@ -45,7 +44,6 @@ struct HomeView: View {
     @StateObject private var viewModel: HomeViewModel
     @State private var showRules = false
 
-    
     init(gameManager: GameManager) {
         let coordinator = NavigationCoordinator()
                self._navigationCoordinator = StateObject(wrappedValue: coordinator)
@@ -106,10 +104,10 @@ struct HomeView: View {
             
             Button(action: {
                 showRules = true
-            }) {
+            }, label: {
                 Image("HelpButton")
                     .font(.title2)
-            }
+            })
             .padding(.top, 20)
             .padding(.trailing, 20)
         }
@@ -132,7 +130,7 @@ struct HomeView: View {
     
     @ViewBuilder
     private var logoAndScoreSection: some View {
-        VStack() {
+        VStack {
             Image(.homeScreenLogo)
                 .frame(width: 311, height: 287)
             // Лучший счет
@@ -207,7 +205,7 @@ struct HomeView: View {
 
 // MARK: - Preview
 #Preview("First Start") {
-    NavigationView{
+    NavigationView {
         HomeView(
             gameManager: GameManager()
         )
@@ -232,11 +230,21 @@ struct HomeView: View {
 private extension GameSession {
     /// Создает тестовую сессию для использования в превью
     static func preview() -> Self {
-        GameSession(
-            questions: Array(
-                repeating: QuestionDTO(difficulty: .easy, category: "aaa", question: "Как дела?", correctAnswer: "Хорошо", incorrectAnswers: Array(repeating: "Плохо", count: 3)),
-                count: 15
-            )
-        )!
+        let questions = Array(
+            repeating: QuestionDTO(
+                difficulty: .easy,
+                category: "aaa",
+                question: "Как дела?",
+                correctAnswer: "Хорошо",
+                incorrectAnswers: Array(repeating: "Плохо", count: 3)
+            ),
+            count: 15
+        )
+        
+        guard let session = GameSession(questions: questions) else {
+            fatalError("Failed to create GameSession in preview()")
+        }
+
+        return session
     }
 }

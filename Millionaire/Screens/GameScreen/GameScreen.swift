@@ -16,7 +16,7 @@ struct GameScreen: View {
     
     @State private var showAudienceHelpView = false
     
-    //    MARK: Init
+    // MARK: Init
     init(viewModel: GameViewModel) {
         self.viewModel = viewModel
     }
@@ -121,12 +121,10 @@ struct GameScreen: View {
             
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {
-                    //viewModel.navigationPath.append(.scoreboard(session: viewModel.currentSession,
-                    //                                            mode: .gameOver))
                     viewModel.testScoreboard()
-                }) {
+                }, label: {
                     Image(ImageResource.iconLevels)
-                }
+                })
             }
         }
     }
@@ -162,7 +160,6 @@ struct GameScreen: View {
         }
     }
     
-    
     // MARK: - Answer Buttons
     private func answerButtons() -> some View {
         VStack(spacing: 20) {
@@ -181,8 +178,6 @@ struct GameScreen: View {
             }
         }
     }
-    
-    
     
     // MARK: - Help Buttons
     private func helpButtons() -> some View {
@@ -250,17 +245,27 @@ struct GameScreen: View {
 }
 
 // MARK: - Preview
-#Preview {
-    NavigationStack {
-        GameScreen(
-            viewModel: GameViewModel(
-                initialSession: GameSession(
-                    questions: Array(
-                        repeating: QuestionDTO(difficulty: .easy, category: "aaa", question: "Как дела?", correctAnswer: "Хорошо", incorrectAnswers: Array(repeating: "Плохо", count: 3)),
-                        count: 15
-                    )
-                )!, gameManager: GameManager()
-            )
-        )
+#Preview("GameScreen") {
+    let questions = Array(
+        repeating: QuestionDTO(
+            difficulty: .easy,
+            category: "aaa",
+            question: "Как дела?",
+            correctAnswer: "Хорошо",
+            incorrectAnswers: Array(repeating: "Плохо", count: 3)
+        ),
+        count: 15
+    )
+
+    guard let session = GameSession(questions: questions) else {
+        return AnyView(Text("Ошибка инициализации GameSession"))
     }
+
+    return AnyView(
+        NavigationStack {
+            GameScreen(
+                viewModel: GameViewModel(initialSession: session, gameManager: GameManager())
+            )
+        }
+    )
 }

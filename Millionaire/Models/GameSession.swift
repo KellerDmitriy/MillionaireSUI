@@ -34,13 +34,13 @@ struct CallToFriendLifelineResult {
 struct GameSession: Hashable, Codable {
     
     /// Выбранная категория
-    private(set) var selectedCategory: QuestionCategory? = nil
+    private(set) var selectedCategory: QuestionCategory?
     
     /// Массив вопросов
     private(set) var questions: [GameQuestion]
     
-    /// Флаг, указывающий, завершена игра или нет
-    ///  Игра завершена если:
+    // Флаг, указывающий, завершена игра или нет
+    // Игра завершена если:
     // 1. Дали неправильный ответ
     // 2. Ответили на все 15 вопросов
     // 3. Время вышло
@@ -90,7 +90,6 @@ struct GameSession: Hashable, Codable {
     mutating func updateSelectedCategory(_ category: QuestionCategory?) {
         selectedCategory = category
     }
-    
     
     mutating func setScore(_ amount: Int) {
         score = amount
@@ -181,7 +180,6 @@ struct GameSession: Hashable, Codable {
             hasUsedCallToFriend = true
         }
     }
-    
     
     private func canUse(lifeline: Lifeline) -> Bool {
         guard !isFinished else {

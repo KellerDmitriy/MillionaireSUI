@@ -28,13 +28,13 @@ struct BackBarButtonView: View {
         Button(action: {
             onBack?()  // Вызываем коллбек перед dismiss
             dismiss()
-        }) {
+        }, label: {
             Image(systemName: "arrow.left")
                 .resizable()
                 .scaledToFit()
                 .frame(width: Drawing.iconSize, height: Drawing.iconSize)
                 .foregroundStyle(foregroundStyle)
-        }
+        })
+        .foregroundStyle(foregroundStyle)
     }
-
 }

@@ -102,7 +102,7 @@ private extension GameManager {
 extension GameManager {
     func endGame(withScore score: Int) {
         // Завершаем текущую сессию
-        //currentSession?.isFinished = true
+        // currentSession?.isFinished = true
         
         // Обновляем лучший результат если нужно
         if score > bestScore {
@@ -115,5 +115,3 @@ extension GameManager {
         currentSession = nil
     }
 }
-
-

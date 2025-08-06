@@ -5,7 +5,6 @@
 //  Created by Келлер Дмитрий on 29.07.2025.
 //
 
-
 import Foundation
 
 struct QuestionCleaner {
