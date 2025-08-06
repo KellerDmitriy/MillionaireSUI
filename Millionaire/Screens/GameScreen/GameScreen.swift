@@ -264,7 +264,7 @@ struct GameScreen: View {
     return AnyView(
         NavigationStack {
             GameScreen(
-                viewModel: GameViewModel(initialSession: session, gameManager: GameManager())
+                viewModel: GameViewModel(initialSession: session)
             )
         }
     )

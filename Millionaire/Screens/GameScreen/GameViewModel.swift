@@ -27,7 +27,6 @@ final class GameViewModel: ObservableObject {
     private let timerService: ITimerService
     private let audioService: IAudioService
     private let storage: IStorageService
-    private let gameManager: GameManager
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -111,14 +110,12 @@ final class GameViewModel: ObservableObject {
         onSessionUpdated: @escaping (GameSession) -> Void = { _ in },
         onGameFinished: (() -> Void)? = nil,
         onNavigateToScoreboard: ((GameSession, ScoreboardMode) -> Void)? = nil,
-        gameManager: GameManager,
         audioService: IAudioService = AudioService.shared,
         storage: IStorageService = StorageService.shared,
         timerService: ITimerService = TimerService()
     ) {
         self.session = initialSession
         self.onSessionUpdated = onSessionUpdated
-        self.gameManager = gameManager
         self.audioService = audioService
         self.storage = storage
         self.timerService = timerService
@@ -139,6 +136,7 @@ final class GameViewModel: ObservableObject {
         timerService.start30SecondTimer { [weak self] in
             self?.onTimeExpired()
         }
+        print("category: \(String(describing: session.getCurrentCategory()?.name))")
         print("difficulty: \(session.currentQuestion.difficulty)")
         print("correctAnswer: \(session.currentQuestion.correctAnswer)")
     }
@@ -263,9 +261,7 @@ final class GameViewModel: ObservableObject {
             
             // Проверяем окончание игры
             if answerResult == .correct && !session.isFinished {
-                // Подготовка следующего вопроса
-                prepareNextQuestionIfNeeded()
-                
+                // Подготовка следующего вопрос
                 selectedAnswer = nil  // <-- переносим сюда
                 answerResultState = nil
                 correctAnswer = nil
@@ -340,36 +336,6 @@ final class GameViewModel: ObservableObject {
     func testScoreboard() {
         pauseGame()
         onNavigateToScoreboard?(session, .intermediate)
-    }
-    
-    private func prepareNextQuestionIfNeeded() {
-        // Определяем текущую и следующую сложность
-        let nextDifficulty: QuestionDifficulty
-        
-        switch numberQuestion {
-        case 0..<5:
-            nextDifficulty = .medium // готовим medium, потому что easy уже есть
-        case 5..<10:
-            nextDifficulty = .hard
-        default:
-            return // hard уже последний блок, дальше не грузим
-        }
-        
-        // Проверяем, догружали ли мы уже эти вопросы
-        let existingCount = session.questions.filter { $0.difficulty == nextDifficulty }.count
-        
-        if existingCount == 0 { // ещё не грузили этот блок
-            Task {
-                do {
-                    let newQuestions = try await gameManager.fetchQuestions(for: nextDifficulty)
-                    session.appendQuestions(newQuestions)
-                } catch {
-                    print("Ошибка догрузки вопросов: \(error)")
-                    showError = true
-                    errorMessage = error.localizedDescription
-                }
-            }
-        }
     }
 }
 
