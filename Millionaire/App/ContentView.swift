@@ -15,11 +15,14 @@ struct ContentView: View {
         ZStack {
             if appState.isLoading {
                 LaunchScreen()
-                    .transition(.opacity)
-            } else {
-                HomeView(gameManager: gameManager)
                     .preferredColorScheme(.dark)
                     .transition(.opacity)
+            } else {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    HomeView(gameManager: gameManager)
+                        .preferredColorScheme(.dark)
+                        .transition(.opacity)
+                }
             }
         }
         .task {

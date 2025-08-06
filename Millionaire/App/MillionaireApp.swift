@@ -25,7 +25,7 @@ final class AppState: ObservableObject {
     @Published var isLoading: Bool = true
     
     func finishLoading() {
-        withAnimation(.easeInOut(duration: 0.5)) {
+        withAnimation(.easeInOut(duration: 0.3)) {
             isLoading = false
         }
     }

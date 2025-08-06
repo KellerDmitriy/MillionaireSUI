@@ -42,34 +42,18 @@ final class GameManager: ObservableObject {  // Управляет сессия�
 
     /// Начинает новую игру
     func startNewGame(for categoryID: Int?) async throws -> GameSession {
-        let categoryID = try validateCategory(categoryID)
+      
         
         let session = try await createInitialSession(for: categoryID)
         
-//        startBackgroundLoading(for: categoryID)
+        startBackgroundLoading(for: categoryID)
         
         return session
     }
     
     //MARK: - Helper Methods
-    private func validateCategory(_ categoryID: Int?) throws -> Int {
-        guard let categoryID = categoryID else {
-            throw StartGameFailure.invalidCategory
-        }
-        return categoryID
-    }
-    
-    ///Проверка доступного количества вопросов
-    private func validateQuestionAvailability(for categoryID: Int, questions: [QuestionDTO]) async throws {
-        let count = questions.count
-        
-        guard count < 15 else {
-            throw StartGameFailure.notEnoughQuestions
-        }
-    }
-    
     /// Создание сессии с easy-вопросами
-    private func createInitialSession(for categoryID: Int) async throws -> GameSession {
+    private func createInitialSession(for categoryID: Int?) async throws -> GameSession {
         let easy = try await questionRepository.fetchQuestions(
             amount: 5,
             categoryID: categoryID,
@@ -89,7 +73,7 @@ final class GameManager: ObservableObject {  // Управляет сессия�
     }
     
     /// Фоновая догрузка medium и hard
-    private func startBackgroundLoading(for categoryID: Int) {
+    private func startBackgroundLoading(for categoryID: Int?) {
     Task.detached(priority: .background) { [weak self] in
         guard let self = self else { return }
         do {
