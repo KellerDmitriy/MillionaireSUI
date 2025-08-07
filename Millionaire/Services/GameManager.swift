@@ -16,6 +16,7 @@ final class GameManager: ObservableObject {  // Управляет сессия�
     /// Лучший результат, если он есть
     private(set) var bestScore: Int
     
+    @Published var selectedCategoryID: Int? = 0 //  текущий выбор для новой игры
     /// Модель последней игры, если она есть
     @Published private(set) var currentSession: GameSession?
     
@@ -35,24 +36,40 @@ final class GameManager: ObservableObject {  // Управляет сессия�
         self.currentSession = lastSession
     }
     
-    /// отдает категории из апишки
-    func getCategories() async throws -> [QuestionCategory] {
-        return try await questionRepository.fetchCategories()
+    func selectCategory(_ categoryID: Int?) {
+        selectedCategoryID = categoryID
+        // Опционально: сохранить в UserDefaults для персистентности
+        UserDefaults.standard.set(categoryID, forKey: "selectedCategoryID")
     }
-
+    
+    func getCategories() async throws -> [QuestionCategory] {
+        do {
+            // Используем QuestionRepository для получения категорий
+            let repository = QuestionRepository()
+            let categories = try await repository.fetchCategories()
+            
+            print(" GameManager: Received \(categories.count) categories from API")
+            return categories
+            
+        } catch {
+            print(" GameManager: Failed to fetch categories: \(error)")
+            throw error
+        }
+    }
+    
     /// Начинает новую игру
-    func startNewGame(for categoryID: Int?) async throws -> GameSession {
-      
+    func startNewGame() async throws -> GameSession {
         
-        let session = try await createInitialSession(for: categoryID)
+        let categoryToUse = (selectedCategoryID == 0) ? nil : selectedCategoryID
+        let session = try await createInitialSession(for: categoryToUse)
         
-        startBackgroundLoading(for: categoryID)
+        startBackgroundLoading(for: categoryToUse)
         
         return session
     }
     
-    //MARK: - Helper Methods
-    /// Создание сессии с easy-вопросами
+    // MARK: - Helper Methods
+    // Создание сессии с easy-вопросами
     private func createInitialSession(for categoryID: Int?) async throws -> GameSession {
         let easy = try await questionRepository.fetchQuestions(
             amount: 5,
@@ -76,33 +93,33 @@ final class GameManager: ObservableObject {  // Управляет сессия�
     
     /// Фоновая догрузка medium и hard
     private func startBackgroundLoading(for categoryID: Int?) {
-    Task.detached(priority: .background) { [weak self] in
-        guard let self = self else { return }
-        do {
-            try await Task.sleep(nanoseconds: 5_000_000_000) // Rate Limit
-            
-            let medium = try await self.questionRepository.fetchQuestions(
-                amount: 5,
-                categoryID: categoryID,
-                difficulty: .medium
-            )
-            
-            try await Task.sleep(nanoseconds: 5_000_000_000)
-            
-            let hard = try await self.questionRepository.fetchQuestions(
-                amount: 5,
-                categoryID: categoryID,
-                difficulty: .hard
-            )
-            await MainActor.run {
-                self.currentSession?.appendQuestions(medium + hard)
-                print("догрузились вопросы")
+        Task.detached(priority: .background) { [weak self] in
+            guard let self = self else { return }
+            do {
+                try await Task.sleep(nanoseconds: 5_000_000_000) // Rate Limit
+                
+                let medium = try await self.questionRepository.fetchQuestions(
+                    amount: 5,
+                    categoryID: categoryID,
+                    difficulty: .medium
+                )
+                
+                try await Task.sleep(nanoseconds: 5_000_000_000)
+                
+                let hard = try await self.questionRepository.fetchQuestions(
+                    amount: 5,
+                    categoryID: categoryID,
+                    difficulty: .hard
+                )
+                await MainActor.run {
+                    self.currentSession?.appendQuestions(medium + hard)
+                    print("догрузились вопросы")
+                }
+            } catch {
+                throw StartGameFailure.notEnoughQuestions
             }
-        } catch {
-            throw StartGameFailure.notEnoughQuestions
         }
     }
-}
     /// Восстанавливает сохранённую сессию
     func restoreSession(_ session: GameSession) {
         Task {

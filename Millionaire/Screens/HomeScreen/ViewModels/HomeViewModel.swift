@@ -17,7 +17,6 @@ final class HomeViewModel: ObservableObject {
     @Published var showError: Bool = false
     @Published var errorMessage: String = ""
     
-    var categoryID: Int?
     // MARK: - Dependencies
     private let storage: IStorageService
     private var gameManager: GameManager
@@ -114,10 +113,9 @@ final class HomeViewModel: ObservableObject {
     func startNewGameFlow() async {
         navigationCoordinator.showLoading()
         isLoading = true
-
+        
         do {
-            if categoryID == 0 { categoryID = nil }
-            let session = try await gameManager.startNewGame(for: categoryID)
+            let session = try await gameManager.startNewGame()
             try? await Task.sleep(nanoseconds: 500_000_000)
             navigationCoordinator.showGame(session)
         } catch {
@@ -125,7 +123,7 @@ final class HomeViewModel: ObservableObject {
             errorMessage = "Failed to load questions. Please check your internet connection."
             showError = true
         }
-
+        
         isLoading = false
     }
     
@@ -136,7 +134,7 @@ final class HomeViewModel: ObservableObject {
         isLoading = true
         
         do {
-            let session = try await gameManager.startNewGame(for: nil)
+            let session = try await gameManager.startNewGame()
             
             // Небольшая задержка для UX
             try? await Task.sleep(nanoseconds: 500_000_000)
@@ -163,8 +161,4 @@ final class HomeViewModel: ObservableObject {
         navigationCoordinator.showGame(session)
     }
     
-    func checkCategorySelection(_ categoryID: Int?) {
-        guard let categoryID = categoryID else { return }
-        self.categoryID = categoryID
-    }
 }
