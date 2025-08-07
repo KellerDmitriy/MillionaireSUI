@@ -7,13 +7,17 @@
 
 import Foundation
 
+@MainActor
 final class CategoriesViewModel: ObservableObject {
     private let gameManager: GameManager
     
-    @Published var selectedCategoryID: Int?
+    var selectedCategoryID: Int? {
+        get { gameManager.selectedCategoryID }
+        set { gameManager.selectCategory(newValue) }
+    }
     @Published var categories: [QuestionCategory] = []
     
-    @Published var isLoading: Bool = false
+    @Published var isLoading: Bool = true
     @Published var errorMessage: String = ""
     
     // MARK: - Initialization
@@ -24,14 +28,20 @@ final class CategoriesViewModel: ObservableObject {
     // MARK: - Load Categories
     /// Asynchronously load categories from API and prepend "All Categories" option.
     func loadCategories() async {
+        
+        await MainActor.run {
+            self.isLoading = true
+            self.errorMessage = ""
+        }
+        
         do {
-            await MainActor.run { self.isLoading = true }
             try? await Task.sleep(nanoseconds: 500_000_000)
             
             // Fetch categories from the API
             let fetchedCategories = try await gameManager.getCategories()
+            print("CategoriesViewModel: Fetched \(fetchedCategories.count) categories")
             
-            // Create a default "All Categories" item with nil id
+            // Create a default "All Categories" item
             let allCategories = QuestionCategory(id: 0, name: "All Categories")
             
             // Combine "All Categories" with fetched categories
@@ -39,13 +49,24 @@ final class CategoriesViewModel: ObservableObject {
             
             // Update published categories on the main thread (UI)
             await MainActor.run {
+                print("CategoriesViewModel: Updating UI with \(all.count) categories")
                 self.categories = all
+                self.isLoading = false
             }
         } catch {
-            // Handle errors and propagate error message on main thread
+            print("CategoriesViewModel: Error loading categories: \(error)")
+            
             await MainActor.run {
                 self.errorMessage = error.localizedDescription
+                self.isLoading = false
+                
+                // Add default category even on error
+                if self.categories.isEmpty {
+                    self.categories = [QuestionCategory(id: 0, name: "All Categories")]
+                }
+                print("CategoriesViewModel: Error handled, isLoading set to false")
             }
         }
+        
     }
 }

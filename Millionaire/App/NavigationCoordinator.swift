@@ -88,7 +88,7 @@ final class NavigationCoordinator: ObservableObject {
     func handleScoreboardClose(mode: GameViewModel.ScoreboardMode, session: GameSession) {
         switch mode {
         case .intermediate, .roundWon
-:
+            :
             // Получаем актуальную сессию из GameManager
             // Не просто popLast, а обновляем route
             if let currentSession = gameManager?.currentSession {
@@ -112,7 +112,7 @@ final class NavigationCoordinator: ObservableObject {
         // Специальный метод для прямого перехода к новой игре
         homeViewModel?.startNewGameDirect()
     }
-
+    
     func returnToMainScreenFromGameOver() {
         // Просто возвращаемся на главный экран
         popToRoot()
@@ -140,17 +140,17 @@ final class NavigationCoordinator: ObservableObject {
             if let gameManager {
                 CategoriesScreen(
                     gameManager: gameManager,
-                    onCategorySelectedID: { [weak self] selectedCategoryID in
-                        self?.homeViewModel?.checkCategorySelection(selectedCategoryID)
+                    onCategorySelected: {
+                        self.popLast()
                     }
                 )
             }
             
         case .game(let session):
-                GameScreen(
-                    viewModel: createGameViewModel(for: session)
-                )
-    
+            GameScreen(
+                viewModel: createGameViewModel(for: session)
+            )
+            
         case .scoreboard(let session, let mode):
             ScoreboardView(
                 session: session,

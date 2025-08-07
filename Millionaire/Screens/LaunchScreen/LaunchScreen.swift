@@ -34,6 +34,3 @@ struct LaunchScreen: View {
 #Preview {
     LaunchScreen()
 }
-
-
-
