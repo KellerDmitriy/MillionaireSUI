@@ -64,8 +64,9 @@ struct HomeView: View {
                         Spacer()
                         helpButton
                     }
+                    .zIndex(1)
                     .padding(.horizontal, 20)
-                    .padding(.top)
+                    .padding(.top, 25)
                     Spacer()
                     // Лого и название игры из ресурсов
                     logoAndScoreSection
@@ -93,7 +94,6 @@ struct HomeView: View {
         .onChange(of: navigationCoordinator.path) { newPath in
             viewModel.onNavigationChange(newPath)
         }
-
     }
     
     // MARK: - View Components
@@ -200,7 +200,6 @@ struct HomeView: View {
             }
         }
     }
-    
 }
 
 // MARK: - Preview

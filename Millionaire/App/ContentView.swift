@@ -9,22 +9,21 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var gameManager: GameManager
-    @EnvironmentObject var appState: AppState
+    @State private var showHome = false
     
     var body: some View {
         ZStack {
-            if appState.isLoading {
+            if !showHome {
                 LaunchScreen()
                     .preferredColorScheme(.dark)
                     .transition(.opacity)
             } else {
-                withAnimation(.easeInOut(duration: 0.3)) {
                     HomeView(gameManager: gameManager)
                         .preferredColorScheme(.dark)
                         .transition(.opacity)
-                }
             }
         }
+        .animation(.easeInOut(duration: 0.5), value: showHome)
         .task {
             await startAppLoading()
         }
@@ -32,9 +31,9 @@ struct ContentView: View {
     
     private func startAppLoading() async {
         // Имитируем загрузку данных (2 секунды)
-        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        try? await Task.sleep(nanoseconds: 2_300_000_000)
         await MainActor.run {
-            appState.finishLoading()
+            showHome = true
         }
     }
 }
