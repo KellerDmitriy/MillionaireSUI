@@ -49,6 +49,10 @@ struct AudienceHelpView: View {
         .padding()
         .background(Image(.background))
         .cornerRadius(30)
+        .overlay(
+            RoundedRectangle(cornerRadius: 30)
+                .stroke(Color.white, lineWidth: 3)
+        )
         .basicShadow()
         .onAppear {
             animateGraphs = true

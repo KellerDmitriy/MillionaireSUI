@@ -26,20 +26,20 @@ struct GameScreen: View {
         ZStack {
             AnimatedGradientBackgroundView()
             
-            VStack {
+            VStack(spacing: 0) {
                 timerView()
-                    .padding(.top, 20)
+                    .padding(.top, 4)
                 
                 questionTextView()
-                    .padding(.top, 20)
-                    .padding(.bottom, 20)
-                
+                    .padding(.bottom, 4)
+                Spacer()
                 answerButtons()
                     .padding(.vertical, 20)
                 helpButtons()
+                    .padding(.bottom, 8)
             }
+            .padding(.horizontal, 20)
             .allowsHitTesting(viewModel.selectedAnswer == nil)
-            .padding(20)
         }
         
         .blur(radius: showCustomAlert ? 5 : 0)
@@ -156,7 +156,8 @@ struct GameScreen: View {
         VStack {
             Text(viewModel.question.question)
                 .millionaireQuestionStyle()
-            Spacer()
+                .lineLimit(5)
+                .allowsTightening(true)
         }
     }
     
