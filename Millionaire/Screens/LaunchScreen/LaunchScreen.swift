@@ -8,8 +8,8 @@
 import SwiftUI
 
 struct LaunchScreen: View {
-    @State private var scale: CGFloat = 0.8
-    @State private var opacity: Double = 0.5
+    @State private var scale: CGFloat = 0.7
+    @State private var opacity: Double = 0.0
     
     var body: some View {
         ZStack {
@@ -17,13 +17,13 @@ struct LaunchScreen: View {
             Image(.homeScreenLogo)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 250)
+                .frame(width: 350)
                 .scaleEffect(scale)
                 .opacity(opacity)
                 .onAppear {
-                    withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                        scale = 2
-                        opacity = 1.0
+                    withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) {
+                        scale = 1.5
+                        opacity = 1
                     }
                 }
         }
@@ -34,4 +34,6 @@ struct LaunchScreen: View {
 #Preview {
     LaunchScreen()
 }
+
+
 

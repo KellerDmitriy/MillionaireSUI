@@ -48,6 +48,7 @@ struct CategoriesScreen: View {
                                 )
                                 .onTapGesture {
                                     viewModel.selectedCategoryID = category.id
+                                    onCategorySelectedID(viewModel.selectedCategoryID)
                                 }
                             }
                         }
@@ -55,13 +56,6 @@ struct CategoriesScreen: View {
                         .padding(.top, 8)
                         .padding(.bottom, 50)
                     }
-                   
-                    // MARK: Select Category Button
-                    gameButton(title: "Select category", variant: .primary) {
-                        onCategorySelectedID(viewModel.selectedCategoryID)
-                    }
-                   
-                    .padding()
                 }
                 .offset(y: -20)
                 .blur(radius: showAlert ? 5 : 0)
@@ -106,23 +100,13 @@ struct CategoriesScreen: View {
             }
         }
     }
-
-    // MARK: - UI Components
-
-    @ViewBuilder
-    private func gameButton(title: String,
-                            variant: ButtonVariant,
-                            action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-        }
-        .millionaireStyle(variant)
-        .frame(maxWidth: .infinity)
-    }
 }
+
 #Preview {
     NavigationView {
-        CategoriesScreen(gameManager: GameManager()
-                         , onCategorySelectedID: {_ in })
+        CategoriesScreen(
+            gameManager: GameManager(),
+            onCategorySelectedID: {_ in }
+        )
     }
 }

@@ -39,6 +39,10 @@ struct CustomAlertView: View {
         .frame(width: 300, height: 450)
         .background(Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 30))
+        .overlay(
+            RoundedRectangle(cornerRadius: 30)
+                .stroke(Color.white, lineWidth: 3)
+        )
         .padding()
     }
 

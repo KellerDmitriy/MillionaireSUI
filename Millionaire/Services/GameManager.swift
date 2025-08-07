@@ -67,6 +67,8 @@ final class GameManager: ObservableObject {  // Управляет сессия�
         let selectedCategory = try await getCategories().first(where: { $0.id == categoryID })
         session.updateSelectedCategory(selectedCategory)
         
+        startBackgroundLoading(for: categoryID)
+        
         self.currentSession = session
         
         return session
@@ -94,6 +96,7 @@ final class GameManager: ObservableObject {  // Управляет сессия�
             )
             await MainActor.run {
                 self.currentSession?.appendQuestions(medium + hard)
+                print("догрузились вопросы")
             }
         } catch {
             throw StartGameFailure.notEnoughQuestions
