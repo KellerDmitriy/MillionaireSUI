@@ -123,7 +123,7 @@ struct GameSession: Hashable, Codable {
                 currentQuestionIndex += 1
             } else { // иначе заканчиваем игру
                 print("закончились вопросы")
-                if  questions.count == 15 {
+                if  questions.count <= 15 {
                     isFinished = true
                 }
             }

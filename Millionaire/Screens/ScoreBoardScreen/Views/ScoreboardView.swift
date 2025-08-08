@@ -16,7 +16,7 @@ struct ScoreboardView: View {
     @State private var showWithdrawalAlert = false
     @State private var showGameOverZeroAlert = false
     
-    private enum DrawingConstant {
+    private enum Drawing {
         // Screen
         static let compactScreenHeight: CGFloat = 650
         static let blurRadius: CGFloat = 5
@@ -30,19 +30,11 @@ struct ScoreboardView: View {
         
         // Levels list
         static let levelsHorizontalPadding: CGFloat = 30
-        static let levelsBottomPadding: CGFloat = 16
+        static let logoOffsetY: CGFloat = -30
      
-        
         // Overlay
         static let overlayOpacity: CGFloat = 0.5
-        
-        // Alert sizes
-        static let withdrawalAlertWidth: CGFloat = 300
-        static let withdrawalAlertHeight: CGFloat = 400
-        static let gameOverAlertWidth: CGFloat = 280
-        static let gameOverAlertHeight: CGFloat = 300
-        static let alertCornerRadius: CGFloat = 20
-        
+
         // Timing
         static let alertDismissDelay: UInt64 = 1_000_000_000
         static let lowPrizeThreshold: Int = 5000
@@ -65,7 +57,7 @@ struct ScoreboardView: View {
     var body: some View {
         GeometryReader { geometry in
             let screenHeight = geometry.size.height
-            let isCompact = screenHeight < DrawingConstant.compactScreenHeight
+            let isCompact = screenHeight < Drawing.compactScreenHeight
             
             ZStack {
                 // Background
@@ -78,6 +70,7 @@ struct ScoreboardView: View {
                     levelList(isCompact)
                     Spacer()
                 }
+                .offset(y: Drawing.logoOffsetY)
                 .blur(radius: showWithdrawalAlert || showGameOverZeroAlert ? 5 : 0)
                 
                 // Alert Overlay
@@ -91,6 +84,7 @@ struct ScoreboardView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        
         .navigationBarBackButtonHidden()
         .task {
             await handleAudioAndAutoClose()
@@ -106,7 +100,7 @@ struct ScoreboardView: View {
     private func handleAudioAndAutoClose() async {
         viewModel.playSound(mode: mode)
         
-        if mode == .gameOver && viewModel.currentPrize < DrawingConstant.lowPrizeThreshold {
+        if mode == .gameOver && viewModel.currentPrize < Drawing.lowPrizeThreshold {
             try? await Task.sleep(for: .seconds(1))
             withAnimation {
                 showGameOverZeroAlert = true
@@ -125,14 +119,14 @@ struct ScoreboardView: View {
 private extension ScoreboardView {
     
     func logoView(_ isCompact: Bool) -> some View {
-        Image(DrawingConstant.logoImageName)
+        Image(Drawing.logoImageName)
             .resizable()
             .scaledToFit()
             .frame(
-                width: isCompact ? DrawingConstant.logoCompactSize : DrawingConstant.logoDefaultSize,
-                height: isCompact ? DrawingConstant.logoCompactSize : DrawingConstant.logoDefaultSize
+                width: isCompact ? Drawing.logoCompactSize : Drawing.logoDefaultSize,
+                height: isCompact ? Drawing.logoCompactSize : Drawing.logoDefaultSize
             )
-            .offset(y: isCompact ? DrawingConstant.logoCompactOffsetY : DrawingConstant.logoDefaultOffsetY)
+            .offset(y: isCompact ? Drawing.logoCompactOffsetY : Drawing.logoDefaultOffsetY)
             .zIndex(1)
     }
     
@@ -146,13 +140,12 @@ private extension ScoreboardView {
                 )
             }
         }
-        .padding(.horizontal, DrawingConstant.levelsHorizontalPadding)
-        .padding(.bottom, DrawingConstant.levelsBottomPadding)
+        .padding(.horizontal, Drawing.levelsHorizontalPadding)
     }
     
     var withdrawalAlert: some View {
         ZStack {
-            Color.black.opacity(DrawingConstant.overlayOpacity)
+            Color.black.opacity(Drawing.overlayOpacity)
                 .ignoresSafeArea()
                 .onTapGesture { showWithdrawalAlert = false }
             
@@ -161,7 +154,7 @@ private extension ScoreboardView {
                 onDismiss: {
                     showWithdrawalAlert = false
                     Task {
-                        try? await Task.sleep(nanoseconds: DrawingConstant.alertDismissDelay)
+                        try? await Task.sleep(nanoseconds: Drawing.alertDismissDelay)
                         viewModel.deinitAudioService()
                         onClose()
                     }
@@ -170,22 +163,20 @@ private extension ScoreboardView {
                 secondButtonAction: {
                     viewModel.takeMoney()
                     Task {
-                        try? await Task.sleep(nanoseconds: DrawingConstant.alertDismissDelay)
+                        try? await Task.sleep(nanoseconds: Drawing.alertDismissDelay)
                         showWithdrawalAlert = false
                         viewModel.deinitAudioService()
                         onAction()
                     }
                 }
             )
-            .frame(width: DrawingConstant.withdrawalAlertWidth, height: DrawingConstant.withdrawalAlertHeight)
-            .cornerRadius(DrawingConstant.alertCornerRadius)
             .zIndex(2)
         }
     }
     
     var gameOverZeroAlert: some View {
         ZStack {
-            Color.black.opacity(DrawingConstant.overlayOpacity).ignoresSafeArea()
+            Color.black.opacity(Drawing.overlayOpacity).ignoresSafeArea()
             
             CustomAlertView(
                 message: "You lost. Your prize is $0.",
@@ -198,11 +189,6 @@ private extension ScoreboardView {
                 },
                 showSecondButton: false
             )
-            .frame(
-                width: DrawingConstant.gameOverAlertWidth,
-                height: DrawingConstant.gameOverAlertHeight
-            )
-            .cornerRadius(DrawingConstant.alertCornerRadius)
             .zIndex(3)
         }
     }
@@ -213,11 +199,11 @@ private extension ScoreboardView {
                 Button(action: {
                     showWithdrawalAlert = true
                 }) {
-                    Image(DrawingConstant.withdrawalIconName)
+                    Image(Drawing.withdrawalIconName)
                         .resizable()
                         .frame(
-                            width: DrawingConstant.withdrawalIconSize,
-                            height: DrawingConstant.withdrawalIconSize
+                            width: Drawing.withdrawalIconSize,
+                            height: Drawing.withdrawalIconSize
                         )
                 }
             } else if mode == .intermediate {
