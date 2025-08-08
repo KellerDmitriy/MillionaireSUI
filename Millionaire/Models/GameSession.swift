@@ -82,7 +82,7 @@ struct GameSession: Hashable, Codable {
             return
         }
         questions.append(contentsOf: cleanedQuestions)
-        print("Догружено \(cleanedQuestions.count) вопросов. Всего: \(questions.count)")
+        print("✅ Догрузка завершена. Всего вопросов: \(self.questions.count)")
     }
     
     mutating func addScore(_ amount: Int) {

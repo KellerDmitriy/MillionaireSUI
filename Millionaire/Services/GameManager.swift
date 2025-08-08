@@ -63,7 +63,9 @@ final class GameManager: ObservableObject {  // Управляет сессия�
         let categoryToUse = (selectedCategoryID == 0) ? nil : selectedCategoryID
         let session = try await createInitialSession(for: categoryToUse)
         
-        startBackgroundLoading(for: categoryToUse)
+        Task.detached(priority: .background) { [weak self] in
+               await self?.ensureMinimumQuestions(totalNeeded: 15, categoryID: categoryToUse)
+           }
         
         return session
     }
@@ -84,42 +86,60 @@ final class GameManager: ObservableObject {  // Управляет сессия�
         let selectedCategory = try await getCategories().first(where: { $0.id == categoryID })
         session.updateSelectedCategory(selectedCategory)
         
-        startBackgroundLoading(for: categoryID)
-        
         self.currentSession = session
         
         return session
     }
     
     /// Фоновая догрузка medium и hard
-    private func startBackgroundLoading(for categoryID: Int?) {
-        Task.detached(priority: .background) { [weak self] in
-            guard let self = self else { return }
+    func ensureMinimumQuestions(totalNeeded: Int, categoryID: Int?) async {
+        guard let session = self.currentSession else { return }
+
+        var attempts = 0
+        let maxAttempts = 5
+        let delayBetweenAttempts: TimeInterval = 5
+
+        while session.questions.count < totalNeeded && attempts < maxAttempts {
+            let remaining = totalNeeded - session.questions.count
+            let batchSize = min(5, remaining)
+
             do {
-                try await Task.sleep(nanoseconds: 5_000_000_000) // Rate Limit
+                let difficulty = self.pickNextDifficulty(for: session)
                 
-                let medium = try await self.questionRepository.fetchQuestions(
-                    amount: 5,
+                let newQuestions = try await self.questionRepository.fetchQuestions(
+                    amount: batchSize,
                     categoryID: categoryID,
-                    difficulty: .medium
+                    difficulty: difficulty
                 )
+
+                self.currentSession?.appendQuestions(newQuestions)
+
+                if self.currentSession?.questions.count ?? 0 >= totalNeeded {
                 
-                try await Task.sleep(nanoseconds: 5_000_000_000)
-                
-                let hard = try await self.questionRepository.fetchQuestions(
-                    amount: 5,
-                    categoryID: categoryID,
-                    difficulty: .hard
-                )
-                await MainActor.run {
-                    self.currentSession?.appendQuestions(medium + hard)
-                    print("догрузились вопросы")
+                    break
                 }
             } catch {
-                throw StartGameFailure.notEnoughQuestions
+                print("⚠️ Попытка \(attempts + 1) не удалась: \(error)")
             }
+
+            attempts += 1
+            try? await Task.sleep(nanoseconds: UInt64(delayBetweenAttempts * 1_000_000_000))
+        }
+
+        print("📦 Итоговое количество вопросов: \(self.currentSession?.questions.count ?? 0)")
+    }
+    
+    private func pickNextDifficulty(for session: GameSession) -> QuestionDifficulty {
+        let count = session.questions.count
+        if count < 5 {
+            return .easy
+        } else if count < 10 {
+            return .medium
+        } else {
+            return .hard
         }
     }
+    
     /// Восстанавливает сохранённую сессию
     func restoreSession(_ session: GameSession) {
         Task {
