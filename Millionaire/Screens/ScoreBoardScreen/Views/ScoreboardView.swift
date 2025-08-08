@@ -31,10 +31,10 @@ struct ScoreboardView: View {
         // Levels list
         static let levelsHorizontalPadding: CGFloat = 30
         static let logoOffsetY: CGFloat = -30
-     
+        
         // Overlay
         static let overlayOpacity: CGFloat = 0.5
-
+        
         // Timing
         static let alertDismissDelay: UInt64 = 1_000_000_000
         static let lowPrizeThreshold: Int = 5000
@@ -96,7 +96,7 @@ struct ScoreboardView: View {
         }
     }
     
-    //MARK: Helpers Methods
+    // MARK: Helpers Methods
     private func handleAudioAndAutoClose() async {
         viewModel.playSound(mode: mode)
         
@@ -115,7 +115,7 @@ struct ScoreboardView: View {
     }
 }
 
-//MARK: Extension ScoreboardView
+// MARK: Extension ScoreboardView
 private extension ScoreboardView {
     
     func logoView(_ isCompact: Bool) -> some View {
@@ -196,16 +196,19 @@ private extension ScoreboardView {
     var toolbarLeading: some View {
         Group {
             if mode == .roundWon && !viewModel.gameSession.isFinished {
-                Button(action: {
-                    showWithdrawalAlert = true
-                }) {
-                    Image(Drawing.withdrawalIconName)
-                        .resizable()
-                        .frame(
-                            width: Drawing.withdrawalIconSize,
-                            height: Drawing.withdrawalIconSize
-                        )
-                }
+                Button(
+                    action: {
+                        showWithdrawalAlert = true
+                    },
+                    label: {
+                        Image(Drawing.withdrawalIconName)
+                            .resizable()
+                            .frame(
+                                width: Drawing.withdrawalIconSize,
+                                height: Drawing.withdrawalIconSize
+                            )
+                    }
+                )
             } else if mode == .intermediate {
                 BackBarButtonView(onBack: {
                     viewModel.deinitAudioService()
