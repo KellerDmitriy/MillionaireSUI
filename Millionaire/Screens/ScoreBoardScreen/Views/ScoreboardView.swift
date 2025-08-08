@@ -15,7 +15,42 @@ struct ScoreboardView: View {
     
     @State private var showWithdrawalAlert = false
     @State private var showGameOverZeroAlert = false
-    @State private var isAnimating = false
+    
+    private enum DrawingConstant {
+        // Screen
+        static let compactScreenHeight: CGFloat = 650
+        static let blurRadius: CGFloat = 5
+        
+        // Logo
+        static let logoImageName = "ScoreboardScreenLogo"
+        static let logoDefaultSize: CGFloat = 85
+        static let logoCompactSize: CGFloat = 60
+        static let logoDefaultOffsetY: CGFloat = 20
+        static let logoCompactOffsetY: CGFloat = 10
+        
+        // Levels list
+        static let levelsHorizontalPadding: CGFloat = 30
+        static let levelsBottomPadding: CGFloat = 16
+     
+        
+        // Overlay
+        static let overlayOpacity: CGFloat = 0.5
+        
+        // Alert sizes
+        static let withdrawalAlertWidth: CGFloat = 300
+        static let withdrawalAlertHeight: CGFloat = 400
+        static let gameOverAlertWidth: CGFloat = 280
+        static let gameOverAlertHeight: CGFloat = 300
+        static let alertCornerRadius: CGFloat = 20
+        
+        // Timing
+        static let alertDismissDelay: UInt64 = 1_000_000_000
+        static let lowPrizeThreshold: Int = 5000
+        
+        // Toolbar icons
+        static let withdrawalIconName = "IconWithdrawal"
+        static let withdrawalIconSize: CGFloat = 44
+    }
     
     init(session: GameSession,
          mode: GameViewModel.ScoreboardMode = .intermediate,
@@ -28,118 +63,167 @@ struct ScoreboardView: View {
     }
     
     var body: some View {
-        ZStack {
-            // Background
-            AnimatedGradientBackgroundView()
+        GeometryReader { geometry in
+            let screenHeight = geometry.size.height
+            let isCompact = screenHeight < DrawingConstant.compactScreenHeight
+            
+            ZStack {
+                // Background
+                AnimatedGradientBackgroundView()
+                
                 VStack(spacing: 0) {
                     // Логотип
-                    Image("ScoreboardScreenLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 85, height: 85)
-                        .offset(y: 20)
-                        .zIndex(1)
-                    
-                    VStack(spacing: 0) {
-                        // Таблица уровней
-                        ForEach(viewModel.levels) { level in
-                            ScoreboardRowView(level: level)
-                        }
-                    }
-                    .padding(.horizontal, 30)
-                    .padding(.bottom, 50)
-                    
+                    logoView(isCompact)
+                    // уровни
+                    levelList(isCompact)
+                    Spacer()
                 }
-                .blur(radius: showWithdrawalAlert ? 5 : 0)
-                .blur(radius: showGameOverZeroAlert ? 5 : 0)
-           
-            // Alert Overlay
-            if showWithdrawalAlert {
-                Color.black.opacity(0.5)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        showWithdrawalAlert = false
-                    }
+                .blur(radius: showWithdrawalAlert || showGameOverZeroAlert ? 5 : 0)
                 
-                CustomAlertView(
-                    message: "Are you sure you want to claim a prize of $\(viewModel.gameSession.score)?",
-                    onDismiss: {
-                        showWithdrawalAlert = false
-                        Task {
-                            try? await Task.sleep(nanoseconds: 1_000_000_000)
-                            viewModel.deinitAudioService()
-                            onClose()
-                        }
-                    },
-                    showSecondButton: true,
-                    secondButtonAction: {
-                        viewModel.takeMoney()
-                        Task {
-                            try? await Task.sleep(nanoseconds: 1_000_000_000)
-                            showWithdrawalAlert = false
-                            viewModel.deinitAudioService()
-                            onAction()
-                        }
-                    }
-                )
-                .frame(width: 300, height: 400)
-                .cornerRadius(20)
-                .zIndex(2)
-            }
-            if showGameOverZeroAlert {
-                Color.black.opacity(0.5)
-                    .ignoresSafeArea()
+                // Alert Overlay
+                if showWithdrawalAlert {
+                    withdrawalAlert
+                }
                 
-                CustomAlertView(
-                    message: "You lost. Your prize is $0.",
-                    onDismiss: {
-                        withAnimation {
-                            showGameOverZeroAlert = false
-                            
-                            viewModel.deinitAudioService()
-                            onClose()
-                        }
-                    },
-                    showSecondButton: false
-                )
-                .frame(width: 280, height: 300)
-                .cornerRadius(20)
-                .zIndex(3)
+                if showGameOverZeroAlert {
+                    gameOverZeroAlert
+                }
             }
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .task {
-            viewModel.playSound(mode: mode)
-            if mode == .gameOver && viewModel.currentPrize < 5000 {
-                Task {
-                    try await Task.sleep(for: .seconds(1))
-                    withAnimation {
-                        showGameOverZeroAlert = true
-                    }
-                }
-            }
-                try? await Task.sleep(nanoseconds: 4_000_000_000)
-            if !showGameOverZeroAlert && !showWithdrawalAlert && mode != .intermediate {
-                viewModel.deinitAudioService()
-                onClose()
-            }
+            await handleAudioAndAutoClose()
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                if mode == .roundWon && !viewModel.gameSession.isFinished {
-                    Button(action: {
-                        showWithdrawalAlert = true
-                    }, label: {
-                        Image("IconWithdrawal")
-                            .resizable()
-                            .frame(width: 44, height: 44)
-                    })
+                toolbarLeading
+            }
+        }
+    }
+    
+    //MARK: Helpers Methods
+    private func handleAudioAndAutoClose() async {
+        viewModel.playSound(mode: mode)
+        
+        if mode == .gameOver && viewModel.currentPrize < DrawingConstant.lowPrizeThreshold {
+            try? await Task.sleep(for: .seconds(1))
+            withAnimation {
+                showGameOverZeroAlert = true
+            }
+        }
+        
+        try? await Task.sleep(for: .seconds(4))
+        if !showGameOverZeroAlert && !showWithdrawalAlert && mode != .intermediate {
+            viewModel.deinitAudioService()
+            onClose()
+        }
+    }
+}
+
+//MARK: Extension ScoreboardView
+private extension ScoreboardView {
+    
+    func logoView(_ isCompact: Bool) -> some View {
+        Image(DrawingConstant.logoImageName)
+            .resizable()
+            .scaledToFit()
+            .frame(
+                width: isCompact ? DrawingConstant.logoCompactSize : DrawingConstant.logoDefaultSize,
+                height: isCompact ? DrawingConstant.logoCompactSize : DrawingConstant.logoDefaultSize
+            )
+            .offset(y: isCompact ? DrawingConstant.logoCompactOffsetY : DrawingConstant.logoDefaultOffsetY)
+            .zIndex(1)
+    }
+    
+    func levelList(_ isCompact: Bool) -> some View {
+        VStack(spacing: 0) {
+            // Таблица уровней
+            ForEach(viewModel.levels) { level in
+                ScoreboardRowView(
+                    level: level,
+                    isCompact: isCompact
+                )
+            }
+        }
+        .padding(.horizontal, DrawingConstant.levelsHorizontalPadding)
+        .padding(.bottom, DrawingConstant.levelsBottomPadding)
+    }
+    
+    var withdrawalAlert: some View {
+        ZStack {
+            Color.black.opacity(DrawingConstant.overlayOpacity)
+                .ignoresSafeArea()
+                .onTapGesture { showWithdrawalAlert = false }
+            
+            CustomAlertView(
+                message: "Are you sure you want to claim a prize of $\(viewModel.gameSession.score)?",
+                onDismiss: {
+                    showWithdrawalAlert = false
+                    Task {
+                        try? await Task.sleep(nanoseconds: DrawingConstant.alertDismissDelay)
+                        viewModel.deinitAudioService()
+                        onClose()
+                    }
+                },
+                showSecondButton: true,
+                secondButtonAction: {
+                    viewModel.takeMoney()
+                    Task {
+                        try? await Task.sleep(nanoseconds: DrawingConstant.alertDismissDelay)
+                        showWithdrawalAlert = false
+                        viewModel.deinitAudioService()
+                        onAction()
+                    }
                 }
-                
-                if mode == .intermediate {
-                    BackBarButtonView(onBack: { viewModel.deinitAudioService()})
+            )
+            .frame(width: DrawingConstant.withdrawalAlertWidth, height: DrawingConstant.withdrawalAlertHeight)
+            .cornerRadius(DrawingConstant.alertCornerRadius)
+            .zIndex(2)
+        }
+    }
+    
+    var gameOverZeroAlert: some View {
+        ZStack {
+            Color.black.opacity(DrawingConstant.overlayOpacity).ignoresSafeArea()
+            
+            CustomAlertView(
+                message: "You lost. Your prize is $0.",
+                onDismiss: {
+                    withAnimation {
+                        showGameOverZeroAlert = false
+                        viewModel.deinitAudioService()
+                        onClose()
+                    }
+                },
+                showSecondButton: false
+            )
+            .frame(
+                width: DrawingConstant.gameOverAlertWidth,
+                height: DrawingConstant.gameOverAlertHeight
+            )
+            .cornerRadius(DrawingConstant.alertCornerRadius)
+            .zIndex(3)
+        }
+    }
+    
+    var toolbarLeading: some View {
+        Group {
+            if mode == .roundWon && !viewModel.gameSession.isFinished {
+                Button(action: {
+                    showWithdrawalAlert = true
+                }) {
+                    Image(DrawingConstant.withdrawalIconName)
+                        .resizable()
+                        .frame(
+                            width: DrawingConstant.withdrawalIconSize,
+                            height: DrawingConstant.withdrawalIconSize
+                        )
                 }
+            } else if mode == .intermediate {
+                BackBarButtonView(onBack: {
+                    viewModel.deinitAudioService()
+                })
             }
         }
     }
@@ -159,7 +243,7 @@ struct ScoreboardView: View {
     guard let session = GameSession(questions: questions) else {
         return Text("Invalid session")
     }
-
+    
     return ScoreboardView(
         session: session,
         mode: .intermediate,
@@ -204,11 +288,11 @@ struct ScoreboardView: View {
             incorrectAnswers: ["B", "C", "D"]
         )
     }
-
+    
     guard let session = GameSession(questions: questions) else {
         return AnyView(Text("Invalid session"))
     }
-
+    
     return AnyView(
         NavigationView {
             ScoreboardView(
