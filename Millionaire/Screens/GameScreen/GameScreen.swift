@@ -29,7 +29,7 @@ struct GameScreen: View {
             VStack(spacing: 0) {
                 timerView()
                     .padding(.top, 4)
-                
+                Spacer()
                 questionTextView()
                     .padding(.bottom, 4)
                 Spacer()
@@ -41,9 +41,8 @@ struct GameScreen: View {
             .padding(.horizontal, 20)
             .allowsHitTesting(viewModel.selectedAnswer == nil)
         }
-        
-        .blur(radius: showCustomAlert ? 5 : 0)
-        .blur(radius: showAudienceHelpView ? 5 : 0)
+        .blur(radius: showCustomAlert || showAudienceHelpView ? 5 : 0)
+
         .onAppear {
             viewModel.startGame()
         }

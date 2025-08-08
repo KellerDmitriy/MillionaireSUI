@@ -74,9 +74,15 @@ struct GameSession: Hashable, Codable {
         self.lifelines = [.fiftyFifty, .secondChance, .audience]
     }
     
+
     mutating func appendQuestions(_ newQuestions: [QuestionDTO]) {
-        let cleanedQuestions: [GameQuestion] = newQuestions.map { $0.cleaned() }
-        self.questions.append(contentsOf: cleanedQuestions)
+        let cleanedQuestions = newQuestions.map { $0.cleaned() }
+        guard !cleanedQuestions.isEmpty else {
+            print("Ошибка: догруженные вопросы пустые!")
+            return
+        }
+        questions.append(contentsOf: cleanedQuestions)
+        print("Догружено \(cleanedQuestions.count) вопросов. Всего: \(questions.count)")
     }
     
     mutating func addScore(_ amount: Int) {
@@ -116,7 +122,10 @@ struct GameSession: Hashable, Codable {
             if currentQuestionIndex + 1 < questions.count {
                 currentQuestionIndex += 1
             } else { // иначе заканчиваем игру
-                isFinished = true
+                print("закончились вопросы")
+                if  questions.count == 15 {
+                    isFinished = true
+                }
             }
             return .correct
         } else {
