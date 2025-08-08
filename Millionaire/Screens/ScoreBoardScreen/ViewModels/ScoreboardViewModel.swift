@@ -20,6 +20,14 @@ final class ScoreboardViewModel: ObservableObject {
         return prizeCalculator.getPrizeAmount(for: gameSession.currentQuestionIndex)
     }
     
+    private var highlightedQuestionNumber: Int {
+        if !gameSession.isFinished {
+            return gameSession.currentQuestionIndex
+        } else {
+            return gameSession.currentQuestionIndex + 1
+        }
+    }
+    
     init(gameSession: GameSession, audioService: IAudioService = AudioService.shared) {
         self.gameSession = gameSession
         self.audioService = audioService
@@ -34,8 +42,8 @@ final class ScoreboardViewModel: ObservableObject {
                 number: prize.questionNumber,
                 amount: prize.amount,
                 isCheckpoint: prize.isCheckpoint,
-                isCurrent: prize.questionNumber == gameSession.currentQuestionIndex,
-                isTop: prize.questionNumber == 15
+                isCurrent: prize.questionNumber == highlightedQuestionNumber,
+                isTop: prize.questionNumber == prizeCalculator.getAllPrizes().count
             )
         }
     }
@@ -44,8 +52,7 @@ final class ScoreboardViewModel: ObservableObject {
         switch mode {
         case .intermediate:
             audioService.pause()
-        case .roundWon
-:
+        case .roundWon:
             audioService.playCorrectAnswerSfx()
         case .gameOver:
             audioService.playWrongAnswerSfx()
