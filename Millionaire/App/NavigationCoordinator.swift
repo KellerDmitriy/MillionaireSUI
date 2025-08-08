@@ -138,12 +138,7 @@ final class NavigationCoordinator: ObservableObject {
             
         case .categories:
             if let gameManager {
-                CategoriesScreen(
-                    gameManager: gameManager,
-                    onCategorySelected: {
-                        self.popLast()
-                    }
-                )
+                CategoriesScreen(gameManager: gameManager)
             }
             
         case .game(let session):

@@ -66,7 +66,7 @@ struct GameSession: Hashable, Codable {
         
         guard !questions.isEmpty else { return nil }
         let cleanedQuestions: [GameQuestion] = questions.map { $0.cleaned() }
-            
+        
         self.questions = cleanedQuestions
         self.isFinished = false
         self.currentQuestionIndex = 0
@@ -74,7 +74,6 @@ struct GameSession: Hashable, Codable {
         self.lifelines = [.fiftyFifty, .secondChance, .audience]
     }
     
-
     mutating func appendQuestions(_ newQuestions: [QuestionDTO]) {
         let cleanedQuestions = newQuestions.map { $0.cleaned() }
         guard !cleanedQuestions.isEmpty else {
@@ -139,7 +138,7 @@ struct GameSession: Hashable, Codable {
                     isFinished = true
                 }
                 return .correct
-               
+                
             }
             isFinished = true
             return .incorrect
@@ -151,19 +150,19 @@ struct GameSession: Hashable, Codable {
         guard canUse(lifeline: .fiftyFifty) else {
             return nil
         }
-
+        
         lifelines.remove(.fiftyFifty)
-
+        
         // Выбираем один случайный неправильный ответ
         guard let randomIncorrect = currentQuestion.incorrectAnswers.randomElement() else {
             return nil
         }
-
+        
         // Все ответы, кроме правильного и одного неправильного, отключаем
         let allAnswers = Set(currentQuestion.incorrectAnswers)
         let enabledAnswers: Set<String> = [currentQuestion.correctAnswer, randomIncorrect]
         let disabledAnswers = allAnswers.subtracting(enabledAnswers)
-
+        
         return FiftyFiftyLifelineResult(disabledAnswers: disabledAnswers)
     }
     

@@ -8,14 +8,11 @@ import SwiftUI
 
 struct CategoriesScreen: View {
     @StateObject var viewModel: CategoriesViewModel
-    let onCategorySelected: () -> Void
     @State private var showAlert = false
     
     // MARK: - Initialization
-    init(gameManager: GameManager,
-         onCategorySelected: @escaping () -> Void) {
+    init(gameManager: GameManager) {
         self._viewModel = StateObject(wrappedValue: CategoriesViewModel(gameManager: gameManager))
-        self.onCategorySelected = onCategorySelected
     }
     
     // MARK: - Body
@@ -144,8 +141,7 @@ struct CategoriesScreen: View {
                                 isSelected: viewModel.selectedCategoryID == category.id
                             )
                             .onTapGesture {
-                                viewModel.selectedCategoryID = category.id
-                                onCategorySelected()
+                                viewModel.selectCategory(category.id)
                             }
                         }
                     }
@@ -163,8 +159,7 @@ struct CategoriesScreen: View {
 #Preview {
     NavigationView {
         CategoriesScreen(
-            gameManager: GameManager(),
-            onCategorySelected: { }
+            gameManager: GameManager()
         )
     }
 }
