@@ -36,9 +36,6 @@ final class GameViewModel: ObservableObject {
     
     private let prizeCalculator = PrizeCalculator()
     
-    /// Обработчик изменения состояния игры
-    private let onSessionUpdated: (GameSession) -> Void
-    
     /// Обработчик завершения игры (возврат на главный экран)
     private let onGameFinished: (() -> Void)?
     
@@ -108,7 +105,6 @@ final class GameViewModel: ObservableObject {
     init(
         initialSession: GameSession,
         gameManager: GameManager,
-        onSessionUpdated: @escaping (GameSession) -> Void = { _ in },
         onGameFinished: (() -> Void)? = nil,
         onNavigateToScoreboard: ((GameSession, ScoreboardMode) -> Void)? = nil,
         audioService: IAudioService = AudioService.shared,
@@ -119,7 +115,6 @@ final class GameViewModel: ObservableObject {
         
         // инициализируем stored properties
         self.gameManager = gameManager          // сохраняем ссылку
-        self.onSessionUpdated = onSessionUpdated
         self.audioService = audioService
         self.storage = storage
         self.timerService = timerService

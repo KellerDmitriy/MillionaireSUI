@@ -141,7 +141,6 @@ final class NavigationCoordinator: ObservableObject {
         path = [.game(session)]
     }
     
-    
     // хранение активного ViewModel
     private var activeGameViewModel: GameViewModel?
     
@@ -211,10 +210,6 @@ final class NavigationCoordinator: ObservableObject {
         return GameViewModel(
             initialSession: session,
             gameManager: gameManager,
-            onSessionUpdated: { _ in  // [weak self] updatedSession in
-                // Теперь это не нужно, VM сам обновляет GM
-                // self?.gameManager?.updateSession(updatedSession)
-            },
             onGameFinished: { [weak self] in
                 // Возвращаемся на главный экран
                 self?.popToRoot()
