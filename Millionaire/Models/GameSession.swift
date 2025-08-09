@@ -80,6 +80,8 @@ struct GameSession: Hashable, Codable {
             print("Ошибка: догруженные вопросы пустые!")
             return
         }
+        
+        print("📝 GameSession.appendQuestions: было \(questions.count) вопросов")
         questions.append(contentsOf: cleanedQuestions)
         print("✅ Догрузка завершена. Всего вопросов: \(self.questions.count)")
     }

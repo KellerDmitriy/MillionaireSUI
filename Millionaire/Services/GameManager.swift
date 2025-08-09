@@ -63,10 +63,11 @@ final class GameManager: ObservableObject {  // Управляет сессия�
         let categoryToUse = (selectedCategoryID == 0) ? nil : selectedCategoryID
         let session = try await createInitialSession(for: categoryToUse)
         
-        Task.detached(priority: .background) { [weak self] in
-               await self?.ensureMinimumQuestions(totalNeeded: 15, categoryID: categoryToUse)
-           }
-        
+        // ❌ ВРЕМЕННО ОТКЛЮЧЕНО - фоновая догрузка
+//        Task.detached(priority: .background) { [weak self] in
+//               await self?.ensureMinimumQuestions(totalNeeded: 15, categoryID: categoryToUse)
+//           }
+//        
         return session
     }
     
@@ -95,6 +96,8 @@ final class GameManager: ObservableObject {  // Управляет сессия�
     func ensureMinimumQuestions(totalNeeded: Int, categoryID: Int?) async {
         guard let session = self.currentSession else { return }
 
+        print("📦 GameManager: Начинаем догрузку. Сейчас вопросов: \(session.questions.count)")
+        
         var attempts = 0
         let maxAttempts = 5
         let delayBetweenAttempts: TimeInterval = 5
@@ -113,6 +116,13 @@ final class GameManager: ObservableObject {  // Управляет сессия�
                 )
 
                 self.currentSession?.appendQuestions(newQuestions)
+                
+                // Проверка, что изменения сохранились
+                if let updatedCount = self.currentSession?.questions.count {
+                    print("📦 GameManager: После append в currentSession стало \(updatedCount) вопросов")
+                } else {
+                    print("⚠️ GameManager: currentSession is nil!")
+                }
 
                 if self.currentSession?.questions.count ?? 0 >= totalNeeded {
                 

@@ -62,15 +62,23 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func showScoreboard(_ session: GameSession, mode: GameViewModel.ScoreboardMode) {
-        lastVisitedScreen = .scoreboard(session, mode)
-        path.append(.scoreboard(session, mode))
+        // ✅ Всегда используем актуальную сессию из GameManager
+        guard let actualSession = gameManager?.currentSession else {
+            print("⚠️ No current session in GameManager!")
+            return
+        }
+        print("🗺️ Navigation: showScoreboard")
+        print("   Переданная session устарела, игнорируем её")
+        print("   Актуально из GM: \(actualSession.questions.count) вопросов, индекс: \(actualSession.currentQuestionIndex)")
+
+        lastVisitedScreen = .scoreboard(actualSession, mode)
+        path.append(.scoreboard(actualSession, mode))
+        
+        print("🗺️ Navigation path: \(path.map { "\($0)" }.joined(separator: " → "))")
+
     }
     
     func showGameOver(_ session: GameSession, mode: GameViewModel.ScoreboardMode) {
-        //        // Убираем scoreboard и показываем game over
-        //        if path.last?.isScoreboard == true {
-        //            path.removeLast()
-        //        }
         lastVisitedScreen = .gameOver(session, mode)
         path.append(.gameOver(session, mode))
     }
@@ -86,6 +94,9 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func handleScoreboardClose(mode: GameViewModel.ScoreboardMode, session: GameSession) {
+        print("🗺️ Navigation: handleScoreboardClose, mode: \(mode)")
+        print("🗺️ Path before: \(path.count) элементов")
+        
         switch mode {
         case .intermediate, .roundWon
             :
@@ -94,10 +105,12 @@ final class NavigationCoordinator: ObservableObject {
             if let currentSession = gameManager?.currentSession {
                 // Удаляем скорборд
                 path.removeLast()
+            print("🗺️ Path after: \(path.count) элементов")
+                // Проблема: При замене route .game(currentSession) SwiftUI пересоздает View и ViewModel!
                 // Заменяем game route на актуальный
-                if !path.isEmpty {
-                    path[path.count - 1] = .game(currentSession)
-                }
+//                if !path.isEmpty {
+//                    path[path.count - 1] = .game(currentSession)
+//                }
             }
             
         case .gameOver, .victoryMillionare:
@@ -128,9 +141,14 @@ final class NavigationCoordinator: ObservableObject {
         path = [.game(session)]
     }
     
+    
+    // хранение активного ViewModel
+    private var activeGameViewModel: GameViewModel?
+    
     // MARK: - View Factory
     @ViewBuilder
     func destinationView(for route: NavigationRoute) -> some View {
+        
         switch route {
         case .loading:
             LoadingView()
@@ -186,10 +204,16 @@ final class NavigationCoordinator: ObservableObject {
     
     // MARK: - ViewModels Factory
     private func createGameViewModel(for session: GameSession) -> GameViewModel {
-        GameViewModel(
+        guard let gameManager = gameManager else {
+                preconditionFailure("GameManager is required for GameViewModel")
+            }
+        
+        return GameViewModel(
             initialSession: session,
-            onSessionUpdated: { [weak self] updatedSession in
-                self?.gameManager?.updateSession(updatedSession)
+            gameManager: gameManager,
+            onSessionUpdated: { _ in  // [weak self] updatedSession in
+                // Теперь это не нужно, VM сам обновляет GM
+                // self?.gameManager?.updateSession(updatedSession)
             },
             onGameFinished: { [weak self] in
                 // Возвращаемся на главный экран
@@ -205,11 +229,6 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func showGameOverAfterWithdrawal(_ session: GameSession) {
-        //        // Убираем скорборд и показываем GameOver
-        //        if path.last?.isScoreboard == true {
-        //            path.removeLast()
-        //        }
-        
         // Показываем GameOver с режимом intermediate (забрали деньги)
         path.append(.gameOver(session, .intermediate))
     }

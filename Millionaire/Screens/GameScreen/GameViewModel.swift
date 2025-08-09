@@ -20,7 +20,11 @@ extension GameViewModel {
 }
 
 // локальное UI состояние + управление сервисами
+@MainActor
 final class GameViewModel: ObservableObject {
+    private let instanceID = UUID().uuidString.prefix(6)
+    
+    private weak var gameManager: GameManager?
     
     // MARK: - Services
     
@@ -41,41 +45,36 @@ final class GameViewModel: ObservableObject {
     /// Обработчик перехода к скорборду
     private let onNavigateToScoreboard: ((GameSession, ScoreboardMode) -> Void)?
     
-    @Published private var session: GameSession {
-        didSet {
-            // Сообщаем обработчику об изменении состояния игры
-            onSessionUpdated(session)
+    private var session: GameSession {
+        get {
+            guard let currentSession = gameManager?.currentSession else {
+                preconditionFailure("GameManager.currentSession is nil - this should never happen")
+            }
+            return currentSession
+        }
+        set {
+            gameManager?.updateSession(newValue)
         }
     }
     
     /// Массив вариантов ответа в порядке их отображения
-    @Published private(set) var answers: [String] {
-        didSet {
-            // Очищаем недоступные варианты при смене ответов (а значит и вопроса)
-            disabledAnswers = []
-        }
-    }
-    
-    /// Недоступные для выбора варианты ответов
-    @Published private(set) var disabledAnswers: Set<String> = []
-    
+    @Published private(set) var answers: [String] = []
+//    {
+//        didSet {
+//            // Очищаем недоступные варианты при смене ответов (а значит и вопроса)
+//            disabledAnswers = []
+//        }
+//    }
+    @Published private(set) var disabledAnswers: Set<String> = []  /// Недоступные для выбора варианты ответов
     @Published var correctAnswer: String?
-    
     @Published var duration: String = "00:00"
-    
-    // Доп состояния для UI
-    @Published private(set) var timerType: TimerType = .normal
-    
-    /// хранение версий от помощи зала в процентах
-    @Published var audienceVotes: [Int]?
-    
+    @Published private(set) var timerType: TimerType = .normal /// Доп состояния для UI
+    @Published var audienceVotes: [Int]? /// хранение версий от помощи зала в процентах
     @Published var errorMessage: String = ""
     @Published var showError: Bool = false
-    
     @Published var selectedAnswer: String?
     @Published var answerResultState: AnswerResult?
-    /// флаг, чтобы знать, была ли применена подсказка
-    @Published var mistakeAllowedUsed: Bool = false
+    @Published var mistakeAllowedUsed: Bool = false /// была ли применена подсказка
     private var mistakeUsedThisTurn: Bool = false
     
     // Храним текущую задачу для возможности отмены
@@ -83,6 +82,7 @@ final class GameViewModel: ObservableObject {
     
     // Важно: отменять задачу при деинициализации
     deinit {
+        print("💀 GameViewModel[\(instanceID)] деинициализирован")
         answerProcessingTask?.cancel()
         
         // Когда GameViewModel уничтожается, все его свойства тоже
@@ -107,6 +107,7 @@ final class GameViewModel: ObservableObject {
     // MARK: Init
     init(
         initialSession: GameSession,
+        gameManager: GameManager,
         onSessionUpdated: @escaping (GameSession) -> Void = { _ in },
         onGameFinished: (() -> Void)? = nil,
         onNavigateToScoreboard: ((GameSession, ScoreboardMode) -> Void)? = nil,
@@ -114,7 +115,10 @@ final class GameViewModel: ObservableObject {
         storage: IStorageService = StorageService.shared,
         timerService: ITimerService = TimerService()
     ) {
-        self.session = initialSession
+        print("🎮 GameViewModel[\(instanceID)] создан с \(initialSession.questions.count) вопросами")
+        
+        // инициализируем stored properties
+        self.gameManager = gameManager          // сохраняем ссылку
         self.onSessionUpdated = onSessionUpdated
         self.audioService = audioService
         self.storage = storage
@@ -122,9 +126,43 @@ final class GameViewModel: ObservableObject {
         self.onGameFinished = onGameFinished
         self.onNavigateToScoreboard = onNavigateToScoreboard
         
-        answers = initialSession.currentQuestion.allAnswers.shuffled()
+        // синхронизировать с GameManager
+        // gameManager.updateSession(initialSession) // Синхронизируем сразу при создании
+        
+        // ✅ Вместо этого просто читаем текущее состояние
+            if let currentSession = gameManager.currentSession {
+                self.answers = currentSession.currentQuestion.allAnswers.shuffled()
+            } else {
+                // Если в GM ничего нет, используем initialSession для инициализации answers
+                self.answers = initialSession.currentQuestion.allAnswers.shuffled()
+            }
         
         bindTimer()
+        subscribeToSessionChanges()
+    }
+    
+    private func subscribeToSessionChanges() {
+        gameManager?.$currentSession
+            .compactMap { $0 }  // Фильтруем nil
+            .removeDuplicates()  // Избегаем лишних обновлений
+            .dropFirst()
+            .receive(on: DispatchQueue.main)  // ВАЖНО: UI обновления только на main
+            .sink { [weak self] updatedSession in
+                guard let self = self else { return }
+                
+                print("📱 GameViewModel получил обновление сессии: вопрос \(updatedSession.currentQuestionIndex + 1)")
+                
+                // Обновляем answers когда меняется вопрос
+                if !updatedSession.isFinished {
+                    self.answers = updatedSession.currentQuestion.allAnswers.shuffled()
+//                    // Сбрасываем состояния UI
+//                    self.selectedAnswer = nil
+//                    self.answerResultState = nil
+//                    self.correctAnswer = nil
+//                    self.disabledAnswers = []
+                }
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - Game Start
@@ -211,36 +249,49 @@ final class GameViewModel: ObservableObject {
     
     @MainActor
     private func processAnswer(_ answer: String) async {
-        var newSession = session
+        
+        // Получаем актуальную сессию из GameManager
+        var updatedSession = session  // Это уже читает из gameManager?.currentSession
+        
+        print("📱 GameViewModel[\(instanceID)]: Текущий вопрос №\(updatedSession.currentQuestionIndex + 1) из \(updatedSession.questions.count)")
+
+        print("🎮 Следующий индекс будет: \(updatedSession.currentQuestionIndex + 1)")
+        if updatedSession.currentQuestionIndex + 1 >= updatedSession.questions.count {
+            print("⚠️ ВНИМАНИЕ: Следующего вопроса НЕТ!")
+        }
         
         // Сохраняем индекс текущего вопроса ДО обработки
-        let currentQuestionIndex = session.currentQuestionIndex
+        let currentQuestionIndex = updatedSession.currentQuestionIndex
         
         // Сохраняем выбранный ответ — важно для подсветки
         selectedAnswer = answer
-        correctAnswer = newSession.currentQuestion.correctAnswer
+        correctAnswer = updatedSession.currentQuestion.correctAnswer
         
         // Обрабатываем ответ — получаем результат, но не начисляем тут ничего
-        guard let answerResult = newSession.answer(answer: answer) else {
+        guard let answerResult = updatedSession.answer(answer: answer) else {
             return
         }
+        
+        // после обработки ответа
+        print("📱 После ответа: индекс стал \(updatedSession.currentQuestionIndex), всего вопросов: \(updatedSession.questions.count)")
         
         // Начисляем призы используя PrizeCalculator
         switch answerResult {
         case .correct:
             let prize = prizeCalculator.getPrizeAmount(for: currentQuestionIndex)
-            newSession.setScore(prize)
+            updatedSession.setScore(prize)
+            
         case .incorrect:
             if mistakeAllowedUsed {
                 // Засчитываем как правильный, но отмечаем, что был ошибочный
                 mistakeUsedThisTurn = true
                 mistakeAllowedUsed = false // Сбросить после одного использования
                 let prize = prizeCalculator.getPrizeAmount(for: currentQuestionIndex)
-                newSession.setScore(prize)
+                updatedSession.setScore(prize)
                 answerResultState = .correct
             } else {
                 let checkpoint = prizeCalculator.getCheckpointPrizeAmount(before: currentQuestionIndex)
-                newSession.setScore(checkpoint)
+                updatedSession.setScore(checkpoint)
                 answerResultState = .incorrect
             }
         }
@@ -256,16 +307,18 @@ final class GameViewModel: ObservableObject {
             try await Task.sleep(for: .seconds(2))
             try Task.checkCancellation()
             
-            // ТЕПЕРЬ обновляем сессию
-            session = newSession
+            // Обновляем GameManager
+            gameManager?.updateSession(updatedSession)
+            // Подписка subscribeToSessionChanges автоматически обновит UI (answers, etc.)
             
             // Проверяем окончание игры
             if answerResult == .correct && !session.isFinished {
                 // Подготовка следующего вопрос
-                selectedAnswer = nil  // <-- переносим сюда
+                selectedAnswer = nil
                 answerResultState = nil
                 correctAnswer = nil
-                answers = session.currentQuestion.allAnswers.shuffled()
+                // НЕ НУЖНО обновлять answers здесь - подписка сделает это
+                //answers = session.currentQuestion.allAnswers.shuffled()
             }
             // Игра окончена
             checkGameEnd(answerResult: answerResult)

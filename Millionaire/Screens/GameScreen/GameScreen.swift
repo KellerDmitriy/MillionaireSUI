@@ -244,28 +244,28 @@ struct GameScreen: View {
     
 }
 
-// MARK: - Preview
-#Preview("GameScreen") {
-    let questions = Array(
-        repeating: QuestionDTO(
-            difficulty: .easy,
-            category: "aaa",
-            question: "Как дела?",
-            correctAnswer: "Хорошо",
-            incorrectAnswers: Array(repeating: "Плохо", count: 3)
-        ),
-        count: 15
-    )
-
-    guard let session = GameSession(questions: questions) else {
-        return AnyView(Text("Ошибка инициализации GameSession"))
-    }
-
-    return AnyView(
-        NavigationStack {
-            GameScreen(
-                viewModel: GameViewModel(initialSession: session)
-            )
-        }
-    )
-}
+//// MARK: - Preview
+//#Preview("GameScreen") {
+//    let questions = Array(
+//        repeating: QuestionDTO(
+//            difficulty: .easy,
+//            category: "aaa",
+//            question: "Как дела?",
+//            correctAnswer: "Хорошо",
+//            incorrectAnswers: Array(repeating: "Плохо", count: 3)
+//        ),
+//        count: 15
+//    )
+//
+//    guard let session = GameSession(questions: questions) else {
+//        AnyView(Text("Ошибка инициализации GameSession"))
+//    }
+//    
+//    AnyView(
+//        NavigationStack {
+//            GameScreen(
+//                viewModel: GameViewModel(initialSession: session)
+//            )
+//        }
+//    )
+//}
