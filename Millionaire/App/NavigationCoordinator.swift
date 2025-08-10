@@ -71,6 +71,10 @@ final class NavigationCoordinator: ObservableObject {
         //        if path.last?.isScoreboard == true {
         //            path.removeLast()
         //        }
+        if case .gameOver = path.last {
+            print("DEBUG: skip duplicate gameOver push")
+            return
+        }
         lastVisitedScreen = .gameOver(session, mode)
         path.append(.gameOver(session, mode))
     }
@@ -190,10 +194,6 @@ final class NavigationCoordinator: ObservableObject {
             initialSession: session,
             onSessionUpdated: { [weak self] updatedSession in
                 self?.gameManager?.updateSession(updatedSession)
-            },
-            onGameFinished: { [weak self] in
-                // Возвращаемся на главный экран
-                self?.popToRoot()
             },
             // GameViewModel не управляет навигацией
             // Вместо этого уведомляет родительский компонент
