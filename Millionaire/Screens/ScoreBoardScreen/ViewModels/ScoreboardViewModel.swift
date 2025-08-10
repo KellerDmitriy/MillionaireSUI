@@ -31,10 +31,10 @@ final class ScoreboardViewModel: ObservableObject {
     init(gameSession: GameSession, audioService: IAudioService = AudioService.shared) {
         self.gameSession = gameSession
         self.audioService = audioService
-        updateLevels()
+        
     }
     
-    func updateLevels() {
+    func updateLevels(mode: GameViewModel.ScoreboardMode) {
         let prizes = prizeCalculator.getAllPrizes().reversed()
         self.levels = prizes.map { prize in
             ScoreboardRow(
@@ -43,6 +43,7 @@ final class ScoreboardViewModel: ObservableObject {
                 amount: prize.amount,
                 isCheckpoint: prize.isCheckpoint,
                 isCurrent: prize.questionNumber == highlightedQuestionNumber,
+                isWrongAnswer: mode == .gameOver,
                 isTop: prize.questionNumber == prizeCalculator.getAllPrizes().count
             )
         }

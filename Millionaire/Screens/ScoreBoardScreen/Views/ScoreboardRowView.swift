@@ -58,6 +58,7 @@ struct ScoreboardRowView: View {
             amount: 1000000,
             isCheckpoint: false,
             isCurrent: false,
+            isWrongAnswer: .random(),
             isTop: true
         )
     )
@@ -71,6 +72,7 @@ struct ScoreboardRowView: View {
             amount: 1000000,
             isCheckpoint: false,
             isCurrent: false,
+            isWrongAnswer: .random(),
             isTop: true
         ),
         isCompact: true
