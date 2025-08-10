@@ -220,9 +220,6 @@ struct GameScreen: View {
         
         // Если выбранный ответ был неправильным, но подсказка активирована
         if selected == answer {
-            if viewModel.mistakeAllowedUsed {
-                return .wrong // Показываем, что он неправильный, но игра продолжается
-            }
 
             switch viewModel.answerResultState {
             case .correct:

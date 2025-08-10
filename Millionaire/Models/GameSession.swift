@@ -25,9 +25,10 @@ struct AudienceLifelineResult {
     let votesPerAnswer: [Int]
 }
 
-struct CallToFriendLifelineResult {
-    /// Ответ друга
-    let answer: String
+/// Результат подсказки второй шанс
+struct SecondChanceLifelineResult {
+    /// Флаг, активирована ли подсказка
+    let isActive: Bool
 }
 
 /// Модель игры с полной логикой обновления её состояния
@@ -58,9 +59,8 @@ struct GameSession: Hashable, Codable {
         // Получаем текущий вопрос по индексу
         questions[currentQuestionIndex]
     }
-    
-    /// Флаг для подсказки друга(право на ошибку)
-    private(set) var hasUsedCallToFriend = false
+    /// Флаг, активирована ли подсказка второй шанс
+    private var secondChanceActive: Bool = false
     
     init?(questions: [QuestionDTO]) {
         
@@ -117,27 +117,15 @@ struct GameSession: Hashable, Codable {
             // Ничего не начисляем — пусть это делает GameManager
             // Просто переходим к следующему вопросу
             
-            // есть ли следующий вопрос
-            if currentQuestionIndex + 1 < questions.count {
-                currentQuestionIndex += 1
-            } else { // иначе заканчиваем игру
-                print("закончились вопросы")
-                if  questions.count <= 15 {
-                    isFinished = true
-                }
-            }
+            nextQuestionOrFinish()
             return .correct
         } else {
             // Отметим, что игра завершена. Какую сумму дать - решает GameManager.
-            if hasUsedCallToFriend {
+            if secondChanceActive {
                 print("Использовано право на ошибку. Игра продолжается.")
-                hasUsedCallToFriend = false
-                if currentQuestionIndex + 1 < questions.count {
-                    currentQuestionIndex += 1
-                } else {
-                    isFinished = true
-                }
-                return .correct
+                secondChanceActive = false
+                nextQuestionOrFinish()
+                return .incorrect
                 
             }
             isFinished = true
@@ -185,11 +173,24 @@ struct GameSession: Hashable, Codable {
     }
     
     ///  метод для подсказки "Право на ошибку"
-    mutating func useLifeline(_ lifeline: Lifeline) {
-        lifelines.remove(lifeline)
-        if lifeline == .secondChance {
-            print("Подсказка 'Право на ошибку' активирована")
-            hasUsedCallToFriend = true
+    mutating func useSecondChanceLifeline() -> SecondChanceLifelineResult? {
+        guard canUse(lifeline: .secondChance) else {
+            return nil
+        }
+        
+        lifelines.remove(.secondChance)
+        secondChanceActive = true
+        print("Подсказка 'Право на ошибку' активирована")
+        return SecondChanceLifelineResult(isActive: true)
+    }
+    
+    
+    private mutating func nextQuestionOrFinish() {
+        if currentQuestionIndex + 1 < questions.count {
+            currentQuestionIndex += 1
+        } else {
+            print("Закончились вопросы")
+            isFinished = true
         }
     }
     
