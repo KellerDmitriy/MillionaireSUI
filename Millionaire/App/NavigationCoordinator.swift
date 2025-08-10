@@ -24,7 +24,7 @@ import SwiftUI
 enum NavigationRoute: Hashable {
     case loading
     case categories
-    case game(GameSession)
+    case game
     case scoreboard(GameSession, GameViewModel.ScoreboardMode)
     case gameOver(GameSession, GameViewModel.ScoreboardMode)
 }
@@ -56,9 +56,9 @@ final class NavigationCoordinator: ObservableObject {
         path.append(.categories)
     }
     
-    func showGame(_ session: GameSession) {
-        lastVisitedScreen = .game(session)
-        path = [.game(session)]
+    func showGame() {
+        lastVisitedScreen = .game
+        path = [.game]
     }
     
     func showScoreboard(_ session: GameSession, mode: GameViewModel.ScoreboardMode) {
@@ -106,11 +106,6 @@ final class NavigationCoordinator: ObservableObject {
                 // Удаляем скорборд
                 path.removeLast()
             print("🗺️ Path after: \(path.count) элементов")
-                // Проблема: При замене route .game(currentSession) SwiftUI пересоздает View и ViewModel!
-                // Заменяем game route на актуальный
-//                if !path.isEmpty {
-//                    path[path.count - 1] = .game(currentSession)
-//                }
             }
             
         case .gameOver, .victoryMillionare:
@@ -137,8 +132,8 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     /// Прямая замена на игру (используется после прямой загрузки)
-    func showGameDirect(_ session: GameSession) {
-        path = [.game(session)]
+    func showGameDirect() {
+        path = [.game]
     }
     
     // хранение активного ViewModel
@@ -158,10 +153,8 @@ final class NavigationCoordinator: ObservableObject {
                 CategoriesScreen(gameManager: gameManager)
             }
             
-        case .game(let session):
-            GameScreen(
-                viewModel: createGameViewModel(for: session)
-            )
+        case .game: // session больше не используется
+            gameScreenView()
             
         case .scoreboard(let session, let mode):
             ScoreboardView(
@@ -201,14 +194,39 @@ final class NavigationCoordinator: ObservableObject {
         }
     }
     
+    @ViewBuilder
+    private func gameScreenView() -> some View {
+        if let existingViewModel = activeGameViewModel {
+            GameScreen(viewModel: existingViewModel)
+        } else {
+            // Создаем ViewModel и сохраняем его
+            GameScreen(viewModel: getOrCreateGameViewModel())
+        }
+    }
+    
+    // для создания и сохранения ViewModel
+    private func getOrCreateGameViewModel() -> GameViewModel {
+        if let existing = activeGameViewModel {
+            return existing
+        }
+        
+        let viewModel = createGameViewModel()
+        activeGameViewModel = viewModel  // Присваивание вне ViewBuilder
+        return viewModel
+    }
+    
     // MARK: - ViewModels Factory
-    private func createGameViewModel(for session: GameSession) -> GameViewModel {
+    private func createGameViewModel() -> GameViewModel {
         guard let gameManager = gameManager else {
                 preconditionFailure("GameManager is required for GameViewModel")
             }
         
+        // Проверяем что есть активная сессия
+        guard gameManager.currentSession != nil else {
+            preconditionFailure("No active session in GameManager")
+        }
+        
         return GameViewModel(
-            initialSession: session,
             gameManager: gameManager,
             onGameFinished: { [weak self] in
                 // Возвращаемся на главный экран

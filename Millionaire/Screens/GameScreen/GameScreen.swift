@@ -244,6 +244,18 @@ struct GameScreen: View {
     
 }
 
+//@ViewBuilder
+//private func previewBody(_ maybeSession: GameSession?) -> some View {
+//    if let session = maybeSession {
+//        let gManager = GameManager(bestScore: 0, lastSession: session)
+//        NavigationStack {
+//            GameScreen(viewModel: GameViewModel(gameManager: gManager))
+//        }
+//    } else {
+//        Text("Ошибка инициализации GameSession")
+//    }
+//}
+//
 //// MARK: - Preview
 //#Preview("GameScreen") {
 //    let questions = Array(
@@ -257,15 +269,5 @@ struct GameScreen: View {
 //        count: 15
 //    )
 //
-//    guard let session = GameSession(questions: questions) else {
-//        AnyView(Text("Ошибка инициализации GameSession"))
-//    }
-//    
-//    AnyView(
-//        NavigationStack {
-//            GameScreen(
-//                viewModel: GameViewModel(initialSession: session)
-//            )
-//        }
-//    )
+//    previewBody(GameSession(questions: questions))
 //}

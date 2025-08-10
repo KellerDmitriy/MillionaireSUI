@@ -103,7 +103,6 @@ final class GameViewModel: ObservableObject {
     
     // MARK: Init
     init(
-        initialSession: GameSession,
         gameManager: GameManager,
         onGameFinished: (() -> Void)? = nil,
         onNavigateToScoreboard: ((GameSession, ScoreboardMode) -> Void)? = nil,
@@ -111,7 +110,7 @@ final class GameViewModel: ObservableObject {
         storage: IStorageService = StorageService.shared,
         timerService: ITimerService = TimerService()
     ) {
-        print("🎮 GameViewModel[\(instanceID)] создан с \(initialSession.questions.count) вопросами")
+        print("🎮 GameViewModel[\(instanceID)] создан")
         
         // инициализируем stored properties
         self.gameManager = gameManager          // сохраняем ссылку
@@ -127,9 +126,9 @@ final class GameViewModel: ObservableObject {
         // ✅ Вместо этого просто читаем текущее состояние
             if let currentSession = gameManager.currentSession {
                 self.answers = currentSession.currentQuestion.allAnswers.shuffled()
+                print("   Инициализирован с \(currentSession.questions.count) вопросами")
             } else {
-                // Если в GM ничего нет, используем initialSession для инициализации answers
-                self.answers = initialSession.currentQuestion.allAnswers.shuffled()
+                preconditionFailure("GameManager must have active session before creating GameViewModel")
             }
         
         bindTimer()
@@ -312,8 +311,6 @@ final class GameViewModel: ObservableObject {
                 selectedAnswer = nil
                 answerResultState = nil
                 correctAnswer = nil
-                // НЕ НУЖНО обновлять answers здесь - подписка сделает это
-                //answers = session.currentQuestion.allAnswers.shuffled()
             }
             // Игра окончена
             checkGameEnd(answerResult: answerResult)
