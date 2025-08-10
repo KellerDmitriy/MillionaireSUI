@@ -31,7 +31,7 @@ struct ScoreboardRow: Identifiable {
     var rowType: ScoreboardRowType {
         switch true {
         case isCurrent && isWrongAnswer == false: return .currentCorrect
-              case isCurrent && isWrongAnswer == true: return .currentWrong
+        case isCurrent && isWrongAnswer == true: return .currentWrong
         case isTop: return .top
         case isCheckpoint: return .checkpoint
         default: return .regular

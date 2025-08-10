@@ -24,7 +24,7 @@ import SwiftUI
 enum NavigationRoute: Hashable {
     case loading
     case categories
-    case game(GameSession)
+    case game
     case scoreboard(GameSession, GameViewModel.ScoreboardMode)
     case gameOver(GameSession, GameViewModel.ScoreboardMode)
 }
@@ -56,21 +56,25 @@ final class NavigationCoordinator: ObservableObject {
         path.append(.categories)
     }
     
-    func showGame(_ session: GameSession) {
-        lastVisitedScreen = .game(session)
-        path = [.game(session)]
+    func showGame() {
+        lastVisitedScreen = .game
+        path = [.game]
     }
     
     func showScoreboard(_ session: GameSession, mode: GameViewModel.ScoreboardMode) {
-        lastVisitedScreen = .scoreboard(session, mode)
-        path.append(.scoreboard(session, mode))
+        // ✅ Всегда используем актуальную сессию из GameManager
+        guard let actualSession = gameManager?.currentSession else {
+            print("⚠️ No current session in GameManager!")
+            return
+        }
+        print("🗺️ Navigation: showScoreboard")
+        print("   Актуально из GM: \(actualSession.questions.count) вопросов, индекс: \(actualSession.currentQuestionIndex)")
+
+        lastVisitedScreen = .scoreboard(actualSession, mode)
+        path.append(.scoreboard(actualSession, mode))
     }
     
     func showGameOver(_ session: GameSession, mode: GameViewModel.ScoreboardMode) {
-        //        // Убираем scoreboard и показываем game over
-        //        if path.last?.isScoreboard == true {
-        //            path.removeLast()
-        //        }
         if case .gameOver = path.last {
             print("DEBUG: skip duplicate gameOver push")
             return
@@ -90,23 +94,22 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func handleScoreboardClose(mode: GameViewModel.ScoreboardMode, session: GameSession) {
+        print("🗺️ Navigation: handleScoreboardClose, mode: \(mode)")
+        print("🗺️ Path before: \(path.count) элементов")
+        
         switch mode {
-        case .intermediate, .roundWon
-            :
-            // Получаем актуальную сессию из GameManager
-            // Не просто popLast, а обновляем route
-            if let currentSession = gameManager?.currentSession {
-                // Удаляем скорборд
-                path.removeLast()
-                // Заменяем game route на актуальный
-                if !path.isEmpty {
-                    path[path.count - 1] = .game(currentSession)
-                }
-            }
+        case .intermediate, .roundWon:
+            popLast()
             
         case .gameOver, .victoryMillionare:
             // При окончании игры - переходим к GameOverView
-            showGameOver(session, mode: mode)
+            // Всегда берем актуальную сессию
+            guard let actualSession = gameManager?.currentSession else {
+                print("⚠️ No current session, using provided")
+                showGameOver(session, mode: mode)
+                return
+            }
+            showGameOver(actualSession, mode: mode)
         }
     }
     
@@ -128,13 +131,17 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     /// Прямая замена на игру (используется после прямой загрузки)
-    func showGameDirect(_ session: GameSession) {
-        path = [.game(session)]
+    func showGameDirect() {
+        path = [.game]
     }
+    
+    // хранение активного ViewModel
+    private var activeGameViewModel: GameViewModel?
     
     // MARK: - View Factory
     @ViewBuilder
     func destinationView(for route: NavigationRoute) -> some View {
+        
         switch route {
         case .loading:
             LoadingView()
@@ -145,10 +152,8 @@ final class NavigationCoordinator: ObservableObject {
                 CategoriesScreen(gameManager: gameManager)
             }
             
-        case .game(let session):
-            GameScreen(
-                viewModel: createGameViewModel(for: session)
-            )
+        case .game: // session больше не используется
+            gameScreenView()
             
         case .scoreboard(let session, let mode):
             ScoreboardView(
@@ -188,13 +193,40 @@ final class NavigationCoordinator: ObservableObject {
         }
     }
     
+    @ViewBuilder
+    private func gameScreenView() -> some View {
+        if let existingViewModel = activeGameViewModel {
+            GameScreen(viewModel: existingViewModel)
+        } else {
+            // Создаем ViewModel и сохраняем его
+            GameScreen(viewModel: getOrCreateGameViewModel())
+        }
+    }
+    
+    // для создания и сохранения ViewModel
+    private func getOrCreateGameViewModel() -> GameViewModel {
+        if let existing = activeGameViewModel {
+            return existing
+        }
+        
+        let viewModel = createGameViewModel()
+        activeGameViewModel = viewModel  // Присваивание вне ViewBuilder
+        return viewModel
+    }
+    
     // MARK: - ViewModels Factory
-    private func createGameViewModel(for session: GameSession) -> GameViewModel {
-        GameViewModel(
-            initialSession: session,
-            onSessionUpdated: { [weak self] updatedSession in
-                self?.gameManager?.updateSession(updatedSession)
-            },
+    private func createGameViewModel() -> GameViewModel {
+        guard let gameManager = gameManager else {
+                preconditionFailure("GameManager is required for GameViewModel")
+            }
+        
+        // Проверяем что есть активная сессия
+        guard gameManager.currentSession != nil else {
+            preconditionFailure("No active session in GameManager")
+        }
+        
+        return GameViewModel(
+            gameManager: gameManager,
             // GameViewModel не управляет навигацией
             // Вместо этого уведомляет родительский компонент
             onNavigateToScoreboard: { [weak self] session, mode in
@@ -205,11 +237,6 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func showGameOverAfterWithdrawal(_ session: GameSession) {
-        //        // Убираем скорборд и показываем GameOver
-        //        if path.last?.isScoreboard == true {
-        //            path.removeLast()
-        //        }
-        
         // Показываем GameOver с режимом intermediate (забрали деньги)
         path.append(.gameOver(session, .intermediate))
     }

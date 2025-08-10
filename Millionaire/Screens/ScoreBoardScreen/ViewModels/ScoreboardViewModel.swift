@@ -31,7 +31,6 @@ final class ScoreboardViewModel: ObservableObject {
     init(gameSession: GameSession, audioService: IAudioService = AudioService.shared) {
         self.gameSession = gameSession
         self.audioService = audioService
-        
     }
     
     func updateLevels(mode: GameViewModel.ScoreboardMode) {

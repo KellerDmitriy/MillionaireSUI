@@ -115,9 +115,9 @@ final class HomeViewModel: ObservableObject {
         isLoading = true
         
         do {
-            let session = try await gameManager.startNewGame()
+            try await gameManager.startNewGame()
             try? await Task.sleep(nanoseconds: 500_000_000)
-            navigationCoordinator.showGame(session)
+            navigationCoordinator.showGame()
         } catch {
             navigationCoordinator.popToRoot()
             errorMessage = "Failed to load questions. Please check your internet connection."
@@ -134,13 +134,13 @@ final class HomeViewModel: ObservableObject {
         isLoading = true
         
         do {
-            let session = try await gameManager.startNewGame()
+            _ = try await gameManager.startNewGame()
             
             // Небольшая задержка для UX
             try? await Task.sleep(nanoseconds: 500_000_000)
             
             // Прямая замена на игру
-            navigationCoordinator.showGameDirect(session)
+            navigationCoordinator.showGameDirect()
         } catch {
             // При ошибке возвращаемся на главный
             navigationCoordinator.popToRoot()
@@ -158,7 +158,7 @@ final class HomeViewModel: ObservableObject {
             return
         }
         
-        navigationCoordinator.showGame(session)
+        navigationCoordinator.showGame()
     }
     
 }

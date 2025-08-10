@@ -187,7 +187,6 @@ struct GameSession: Hashable, Codable {
         return SecondChanceLifelineResult(isActive: true)
     }
     
-    
     private mutating func nextQuestionOrFinish() {
         if currentQuestionIndex + 1 < questions.count {
             currentQuestionIndex += 1
