@@ -59,7 +59,6 @@ struct GameSession: Hashable, Codable {
         // Получаем текущий вопрос по индексу
         questions[currentQuestionIndex]
     }
-    
     /// Флаг, активирована ли подсказка второй шанс
     private var secondChanceActive: Bool = false
     
@@ -81,8 +80,6 @@ struct GameSession: Hashable, Codable {
             print("Ошибка: догруженные вопросы пустые!")
             return
         }
-        
-        print("📝 GameSession.appendQuestions: было \(questions.count) вопросов")
         questions.append(contentsOf: cleanedQuestions)
         print("✅ Догрузка завершена. Всего вопросов: \(self.questions.count)")
     }
@@ -126,11 +123,12 @@ struct GameSession: Hashable, Codable {
             }
             return .correct
         } else {
-            //            если активировано право на ошибку то продолжить игру
+//            если активировано право на ошибку то продолжить игру
             if secondChanceActive {
                 secondChanceActive = false
                 nextQuestionOrFinish()
                 return .incorrect
+                
             }
             // Отметим, что игра завершена. Какую сумму дать - решает GameManager.
             isFinished = true
