@@ -121,15 +121,18 @@ struct GameSession: Hashable, Codable {
             // Просто переходим к следующему вопросу
             
             nextQuestionOrFinish()
+            if secondChanceActive {
+                secondChanceActive = false
+            }
             return .correct
         } else {
-            // Отметим, что игра завершена. Какую сумму дать - решает GameManager.
+            //            если активировано право на ошибку то продолжить игру
             if secondChanceActive {
-                print("Использовано право на ошибку. Игра продолжается.")
                 secondChanceActive = false
                 nextQuestionOrFinish()
                 return .incorrect
             }
+            // Отметим, что игра завершена. Какую сумму дать - решает GameManager.
             isFinished = true
             return .incorrect
         }

@@ -86,6 +86,9 @@ struct ScoreboardView: View {
         .navigationBarTitleDisplayMode(.inline)
         
         .navigationBarBackButtonHidden()
+        .onAppear {
+            viewModel.updateLevels(mode: mode)
+        }
         .task {
             await handleAudioAndAutoClose()
         }

@@ -75,6 +75,10 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func showGameOver(_ session: GameSession, mode: GameViewModel.ScoreboardMode) {
+        if case .gameOver = path.last {
+            print("DEBUG: skip duplicate gameOver push")
+            return
+        }
         lastVisitedScreen = .gameOver(session, mode)
         path.append(.gameOver(session, mode))
     }
@@ -223,10 +227,6 @@ final class NavigationCoordinator: ObservableObject {
         
         return GameViewModel(
             gameManager: gameManager,
-            onGameFinished: { [weak self] in
-                // Возвращаемся на главный экран
-                self?.popToRoot()
-            },
             // GameViewModel не управляет навигацией
             // Вместо этого уведомляет родительский компонент
             onNavigateToScoreboard: { [weak self] session, mode in
