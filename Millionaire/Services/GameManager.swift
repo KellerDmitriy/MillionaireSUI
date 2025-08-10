@@ -58,22 +58,22 @@ final class GameManager: ObservableObject {  // Управляет сессия�
     }
     
     /// Начинает новую игру
-    func startNewGame() async throws -> GameSession {
-        
+    func startNewGame() async throws {
         let categoryToUse = (selectedCategoryID == 0) ? nil : selectedCategoryID
-        let session = try await createInitialSession(for: categoryToUse)
         
-        // ❌ ВРЕМЕННО ОТКЛЮЧЕНО - фоновая догрузка
+        // Создаем и сохраняем сессию внутри
+        try await createAndStoreInitialSession(for: categoryToUse)
+        
+//        // ВКЛЮЧАЕМ фоновую догрузку
 //        Task.detached(priority: .background) { [weak self] in
-//               await self?.ensureMinimumQuestions(totalNeeded: 15, categoryID: categoryToUse)
-//           }
-//        
-        return session
+//            await self?.ensureMinimumQuestions(totalNeeded: 15, categoryID: categoryToUse)
+//        }
+        
     }
     
     // MARK: - Helper Methods
     // Создание сессии с easy-вопросами
-    private func createInitialSession(for categoryID: Int?) async throws -> GameSession {
+    private func createAndStoreInitialSession(for categoryID: Int?) async throws {
         let easy = try await questionRepository.fetchQuestions(
             amount: 5,
             categoryID: categoryID,
@@ -88,24 +88,26 @@ final class GameManager: ObservableObject {  // Управляет сессия�
         session.updateSelectedCategory(selectedCategory)
         
         self.currentSession = session
-        
-        return session
     }
     
     /// Фоновая догрузка medium и hard
     func ensureMinimumQuestions(totalNeeded: Int, categoryID: Int?) async {
-        guard let session = self.currentSession else { return }
-
+        // Проверяем наличие сессии
+        guard var session = self.currentSession else {
+            print("⚠️ GameManager: No current session for background loading")
+            return
+        }
+        
         print("📦 GameManager: Начинаем догрузку. Сейчас вопросов: \(session.questions.count)")
         
         var attempts = 0
         let maxAttempts = 5
         let delayBetweenAttempts: TimeInterval = 5
-
+        
         while session.questions.count < totalNeeded && attempts < maxAttempts {
             let remaining = totalNeeded - session.questions.count
             let batchSize = min(5, remaining)
-
+            
             do {
                 let difficulty = self.pickNextDifficulty(for: session)
                 
@@ -114,29 +116,27 @@ final class GameManager: ObservableObject {  // Управляет сессия�
                     categoryID: categoryID,
                     difficulty: difficulty
                 )
-
-                self.currentSession?.appendQuestions(newQuestions)
                 
-                // Проверка, что изменения сохранились
-                if let updatedCount = self.currentSession?.questions.count {
-                    print("📦 GameManager: После append в currentSession стало \(updatedCount) вопросов")
-                } else {
-                    print("⚠️ GameManager: currentSession is nil!")
-                }
-
-                if self.currentSession?.questions.count ?? 0 >= totalNeeded {
+                session.appendQuestions(newQuestions) // обновляем локальную копию
+                self.currentSession = session // сохраняем обратно в currentSession
                 
+                print("📦 GameManager: После append стало \(session.questions.count) вопросов")
+                
+                if session.questions.count >= totalNeeded {
                     break
                 }
             } catch {
                 print("⚠️ Попытка \(attempts + 1) не удалась: \(error)")
             }
-
+            
             attempts += 1
-            try? await Task.sleep(nanoseconds: UInt64(delayBetweenAttempts * 1_000_000_000))
+            // Небольшая задержка между попытками
+            if attempts < maxAttempts {
+                try? await Task.sleep(nanoseconds: UInt64(delayBetweenAttempts * 1_000_000_000))
+            }
         }
-
-        print("📦 Итоговое количество вопросов: \(self.currentSession?.questions.count ?? 0)")
+        
+        print("📦 Итоговое количество вопросов: \(session.questions.count)")
     }
     
     private func pickNextDifficulty(for session: GameSession) -> QuestionDifficulty {

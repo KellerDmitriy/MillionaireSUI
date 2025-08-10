@@ -112,3 +112,14 @@ final class AudioService: IAudioService {
         player = nil
     }
 }
+
+class MockAudioService: IAudioService {
+    func playGameSfx() { print("🔊 Game music") }
+    func playAnswerLockedSfx() { print("🔊 Answer locked") }
+    func playCorrectAnswerSfx() { print("🔊 Correct!") }
+    func playWrongAnswerSfx() { print("🔊 Wrong!") }
+    func playVictorySfx() { print("🔊 Victory!") }
+    func pause() { print("⏸️ Paused") }
+    func resume() { print("▶️ Resumed") }
+    func stop() { print("⏹️ Stopped") }
+}

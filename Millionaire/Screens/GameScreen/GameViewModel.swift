@@ -22,7 +22,6 @@ extension GameViewModel {
 // локальное UI состояние + управление сервисами
 @MainActor
 final class GameViewModel: ObservableObject {
-    private let instanceID = UUID().uuidString.prefix(6)
     
     private weak var gameManager: GameManager?
     
@@ -56,12 +55,12 @@ final class GameViewModel: ObservableObject {
     
     /// Массив вариантов ответа в порядке их отображения
     @Published private(set) var answers: [String] = []
-//    {
-//        didSet {
-//            // Очищаем недоступные варианты при смене ответов (а значит и вопроса)
-//            disabledAnswers = []
-//        }
-//    }
+    //    {
+    //        didSet {
+    //            // Очищаем недоступные варианты при смене ответов (а значит и вопроса)
+    //            disabledAnswers = []
+    //        }
+    //    }
     @Published private(set) var disabledAnswers: Set<String> = []  /// Недоступные для выбора варианты ответов
     @Published var correctAnswer: String?
     @Published var duration: String = "00:00"
@@ -79,7 +78,6 @@ final class GameViewModel: ObservableObject {
     
     // Важно: отменять задачу при деинициализации
     deinit {
-        print("💀 GameViewModel[\(instanceID)] деинициализирован")
         answerProcessingTask?.cancel()
         
         // Когда GameViewModel уничтожается, все его свойства тоже
@@ -110,8 +108,6 @@ final class GameViewModel: ObservableObject {
         storage: IStorageService = StorageService.shared,
         timerService: ITimerService = TimerService()
     ) {
-        print("🎮 GameViewModel[\(instanceID)] создан")
-        
         // инициализируем stored properties
         self.gameManager = gameManager          // сохраняем ссылку
         self.audioService = audioService
@@ -120,16 +116,13 @@ final class GameViewModel: ObservableObject {
         self.onGameFinished = onGameFinished
         self.onNavigateToScoreboard = onNavigateToScoreboard
         
-        // синхронизировать с GameManager
-        // gameManager.updateSession(initialSession) // Синхронизируем сразу при создании
-        
         // ✅ Вместо этого просто читаем текущее состояние
-            if let currentSession = gameManager.currentSession {
-                self.answers = currentSession.currentQuestion.allAnswers.shuffled()
-                print("   Инициализирован с \(currentSession.questions.count) вопросами")
-            } else {
-                preconditionFailure("GameManager must have active session before creating GameViewModel")
-            }
+        if let currentSession = gameManager.currentSession {
+            self.answers = currentSession.currentQuestion.allAnswers.shuffled()
+            print("   Инициализирован с \(currentSession.questions.count) вопросами")
+        } else {
+            preconditionFailure("GameManager must have active session before creating GameViewModel")
+        }
         
         bindTimer()
         subscribeToSessionChanges()
@@ -138,22 +131,25 @@ final class GameViewModel: ObservableObject {
     private func subscribeToSessionChanges() {
         gameManager?.$currentSession
             .compactMap { $0 }  // Фильтруем nil
-            .removeDuplicates()  // Избегаем лишних обновлений
+            .removeDuplicates()
+//            .removeDuplicates { old, new in
+//                // Считаем одинаковыми если:
+//                // - Одинаковый индекс текущего вопроса
+//                // - Одинаковое состояние завершения
+//                // (Игнорируем изменение количества вопросов)
+//                old.currentQuestionIndex == new.currentQuestionIndex &&
+//                old.isFinished == new.isFinished
+//            }
             .dropFirst()
             .receive(on: DispatchQueue.main)  // ВАЖНО: UI обновления только на main
             .sink { [weak self] updatedSession in
                 guard let self = self else { return }
                 
-                print("📱 GameViewModel получил обновление сессии: вопрос \(updatedSession.currentQuestionIndex + 1)")
+                print("📱 GameViewModel: смена вопроса на №\(updatedSession.currentQuestionIndex + 1)")
                 
                 // Обновляем answers когда меняется вопрос
                 if !updatedSession.isFinished {
                     self.answers = updatedSession.currentQuestion.allAnswers.shuffled()
-//                    // Сбрасываем состояния UI
-//                    self.selectedAnswer = nil
-//                    self.answerResultState = nil
-//                    self.correctAnswer = nil
-//                    self.disabledAnswers = []
                 }
             }
             .store(in: &cancellables)
@@ -161,16 +157,23 @@ final class GameViewModel: ObservableObject {
     
     // MARK: - Game Start
     func startGame() {
-        // Стартуем только если нет выбранного ответа
+        // Стартуем только если нет выбранного ответа И это первый вопрос
         guard selectedAnswer == nil else { return }
         
         audioService.playGameSfx()
-        timerService.start30SecondTimer { [weak self] in
-            self?.onTimeExpired()
-        }
+        
+        startNewRound()
+    }
+    
+    private func startNewRound() {
+        // Печатаем для каждого нового вопроса
         print("category: \(String(describing: session.getCurrentCategory()?.name))")
         print("difficulty: \(session.currentQuestion.difficulty)")
         print("correctAnswer: \(session.currentQuestion.correctAnswer)")
+        
+        timerService.start30SecondTimer { [weak self] in
+            self?.onTimeExpired()
+        }
     }
     
     private func onTimeExpired() {
@@ -247,8 +250,8 @@ final class GameViewModel: ObservableObject {
         // Получаем актуальную сессию из GameManager
         var updatedSession = session  // Это уже читает из gameManager?.currentSession
         
-        print("📱 GameViewModel[\(instanceID)]: Текущий вопрос №\(updatedSession.currentQuestionIndex + 1) из \(updatedSession.questions.count)")
-
+        print("Текущий вопрос №\(updatedSession.currentQuestionIndex + 1) из \(updatedSession.questions.count)")
+        
         print("🎮 Следующий индекс будет: \(updatedSession.currentQuestionIndex + 1)")
         if updatedSession.currentQuestionIndex + 1 >= updatedSession.questions.count {
             print("⚠️ ВНИМАНИЕ: Следующего вопроса НЕТ!")
@@ -295,7 +298,7 @@ final class GameViewModel: ObservableObject {
         
         // Устанавливаем состояние результата для анимации
         answerResultState = answerResult == .incorrect && !mistakeUsedThisTurn ? .incorrect : .correct
-
+        
         // Ждём анимации результата
         do {
             try await Task.sleep(for: .seconds(2))
@@ -328,7 +331,7 @@ final class GameViewModel: ObservableObject {
             if session.currentQuestionIndex == 14 {
                 print(" ПОБЕДА! Выигран миллион!")
                 mode = .victoryMillionare
-
+                
             } else {
                 print(" Игра окончена на вопросе \(session.currentQuestionIndex + 1)")
                 print(" Выигрыш: \(session.score) ")

@@ -244,30 +244,60 @@ struct GameScreen: View {
     
 }
 
-//@ViewBuilder
-//private func previewBody(_ maybeSession: GameSession?) -> some View {
-//    if let session = maybeSession {
-//        let gManager = GameManager(bestScore: 0, lastSession: session)
-//        NavigationStack {
-//            GameScreen(viewModel: GameViewModel(gameManager: gManager))
-//        }
-//    } else {
-//        Text("Ошибка инициализации GameSession")
-//    }
-//}
-//
-//// MARK: - Preview
-//#Preview("GameScreen") {
-//    let questions = Array(
-//        repeating: QuestionDTO(
-//            difficulty: .easy,
-//            category: "aaa",
-//            question: "Как дела?",
-//            correctAnswer: "Хорошо",
-//            incorrectAnswers: Array(repeating: "Плохо", count: 3)
-//        ),
-//        count: 15
-//    )
-//
-//    previewBody(GameSession(questions: questions))
-//}
+// Создаем расширение для удобства
+extension GameSession {
+    static func makeForPreview(
+        atQuestion: Int = 0,
+        withScore: Int = 0,
+        lifelines: Set<Lifeline> = [.fiftyFifty, .audience, .secondChance]
+    ) -> GameSession? {
+        let questions = (0..<15).map { index in
+            QuestionDTO(
+                difficulty: index < 5 ? .easy : index < 10 ? .medium : .hard,
+                category: "Preview Category",
+                question: "Question \(index + 1): What is the answer?",
+                correctAnswer: "Correct",
+                incorrectAnswers: ["Wrong A", "Wrong B", "Wrong C"]
+            )
+        }
+        
+        guard var session = GameSession(questions: questions) else { return nil }
+        
+        // Продвигаемся до нужного вопроса
+        for _ in 0..<atQuestion {
+            _ = session.answer(answer: session.currentQuestion.correctAnswer)
+        }
+        
+        session.setScore(withScore)
+        
+        // Настраиваем подсказки
+        let allLifelines: Set<Lifeline> = [.fiftyFifty, .audience, .secondChance]
+        for used in allLifelines.subtracting(lifelines) {
+            session.useLifeline(used)
+        }
+        
+        return session
+    }
+}
+
+// Тогда Preview становится проще:
+#Preview("Game - Mid Game") {
+    if let session = GameSession.makeForPreview(
+        atQuestion: 7,
+        withScore: 10000,
+        lifelines: [.audience]
+    ) {
+        let gameManager = GameManager(bestScore: 50000, lastSession: session)
+        
+        NavigationStack {
+            GameScreen(
+                viewModel: GameViewModel(
+                    gameManager: gameManager,
+                    audioService: MockAudioService()
+                )
+            )
+        }
+    } else {
+        Text("Preview failed")
+    }
+}

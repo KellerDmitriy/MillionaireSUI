@@ -115,7 +115,7 @@ final class HomeViewModel: ObservableObject {
         isLoading = true
         
         do {
-            _ = try await gameManager.startNewGame()
+            try await gameManager.startNewGame()
             try? await Task.sleep(nanoseconds: 500_000_000)
             navigationCoordinator.showGame()
         } catch {

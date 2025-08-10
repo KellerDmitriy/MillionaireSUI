@@ -68,14 +68,10 @@ final class NavigationCoordinator: ObservableObject {
             return
         }
         print("🗺️ Navigation: showScoreboard")
-        print("   Переданная session устарела, игнорируем её")
         print("   Актуально из GM: \(actualSession.questions.count) вопросов, индекс: \(actualSession.currentQuestionIndex)")
 
         lastVisitedScreen = .scoreboard(actualSession, mode)
         path.append(.scoreboard(actualSession, mode))
-        
-        print("🗺️ Navigation path: \(path.map { "\($0)" }.joined(separator: " → "))")
-
     }
     
     func showGameOver(_ session: GameSession, mode: GameViewModel.ScoreboardMode) {
@@ -98,19 +94,18 @@ final class NavigationCoordinator: ObservableObject {
         print("🗺️ Path before: \(path.count) элементов")
         
         switch mode {
-        case .intermediate, .roundWon
-            :
-            // Получаем актуальную сессию из GameManager
-            // Не просто popLast, а обновляем route
-            if let currentSession = gameManager?.currentSession {
-                // Удаляем скорборд
-                path.removeLast()
-            print("🗺️ Path after: \(path.count) элементов")
-            }
+        case .intermediate, .roundWon:
+            popLast()
             
         case .gameOver, .victoryMillionare:
             // При окончании игры - переходим к GameOverView
-            showGameOver(session, mode: mode)
+            // Всегда берем актуальную сессию
+            guard let actualSession = gameManager?.currentSession else {
+                print("⚠️ No current session, using provided")
+                showGameOver(session, mode: mode)
+                return
+            }
+            showGameOver(actualSession, mode: mode)
         }
     }
     
