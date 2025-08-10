@@ -70,8 +70,6 @@ final class GameViewModel: ObservableObject {
     @Published var showError: Bool = false
     @Published var selectedAnswer: String?
     @Published var answerResultState: AnswerResult?
-    @Published var mistakeAllowedUsed: Bool = false /// была ли применена подсказка
-    private var mistakeUsedThisTurn: Bool = false
     
     // Храним текущую задачу для возможности отмены
     private var answerProcessingTask: Task<Void, Never>?
@@ -279,25 +277,16 @@ final class GameViewModel: ObservableObject {
             updatedSession.setScore(prize)
             
         case .incorrect:
-            if mistakeAllowedUsed {
-                // Засчитываем как правильный, но отмечаем, что был ошибочный
-                mistakeUsedThisTurn = true
-                mistakeAllowedUsed = false // Сбросить после одного использования
-                let prize = prizeCalculator.getPrizeAmount(for: currentQuestionIndex)
-                updatedSession.setScore(prize)
-                answerResultState = .correct
-            } else {
-                let checkpoint = prizeCalculator.getCheckpointPrizeAmount(before: currentQuestionIndex)
-                updatedSession.setScore(checkpoint)
-                answerResultState = .incorrect
-            }
+            let checkpoint = prizeCalculator.getCheckpointPrizeAmount(before: currentQuestionIndex)
+            updatedSession.setScore(checkpoint)
+            answerResultState = .incorrect
         }
         
         // НЕ обновляем сессию сразу!
         // session = newSession
         
         // Устанавливаем состояние результата для анимации
-        answerResultState = answerResult == .incorrect && !mistakeUsedThisTurn ? .incorrect : .correct
+        answerResultState = answerResult == .incorrect ? .incorrect : .correct
         
         // Ждём анимации результата
         do {
@@ -375,10 +364,7 @@ final class GameViewModel: ObservableObject {
     }
     
     func secondChanceButtonTap() {
-        var session = self.session
-        session.useLifeline(.secondChance)
-        self.session = session
-        mistakeAllowedUsed = true
+        guard session.useSecondChanceLifeline() != nil else { return }
     }
     
     func testScoreboard() {
