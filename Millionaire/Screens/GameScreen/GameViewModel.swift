@@ -35,9 +35,6 @@ final class GameViewModel: ObservableObject {
     /// Обработчик изменения состояния игры
     private let onSessionUpdated: (GameSession) -> Void
     
-    /// Обработчик завершения игры (возврат на главный экран)
-    private let onGameFinished: (() -> Void)?
-    
     /// Обработчик перехода к скорборду
     private let onNavigateToScoreboard: ((GameSession, ScoreboardMode) -> Void)?
     
@@ -105,7 +102,6 @@ final class GameViewModel: ObservableObject {
     init(
         initialSession: GameSession,
         onSessionUpdated: @escaping (GameSession) -> Void = { _ in },
-        onGameFinished: (() -> Void)? = nil,
         onNavigateToScoreboard: ((GameSession, ScoreboardMode) -> Void)? = nil,
         audioService: IAudioService = AudioService.shared,
         storage: IStorageService = StorageService.shared,
@@ -116,7 +112,6 @@ final class GameViewModel: ObservableObject {
         self.audioService = audioService
         self.storage = storage
         self.timerService = timerService
-        self.onGameFinished = onGameFinished
         self.onNavigateToScoreboard = onNavigateToScoreboard
         
         answers = initialSession.currentQuestion.allAnswers.shuffled()
@@ -354,7 +349,6 @@ extension GameViewModel {
         stopGameResources()
         answerProcessingTask?.cancel()
         session.finish()
-        onGameFinished?()
         storage.clearSavedSession()
     }
 }
