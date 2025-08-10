@@ -74,9 +74,6 @@ final class GameViewModel: ObservableObject {
     
     @Published var selectedAnswer: String?
     @Published var answerResultState: AnswerResult?
-    /// флаг, чтобы знать, была ли применена подсказка
-    @Published var mistakeAllowedUsed: Bool = false
-    private var mistakeUsedThisTurn: Bool = false
     
     // Храним текущую задачу для возможности отмены
     private var answerProcessingTask: Task<Void, Never>?
@@ -231,26 +228,17 @@ final class GameViewModel: ObservableObject {
             let prize = prizeCalculator.getPrizeAmount(for: currentQuestionIndex)
             newSession.setScore(prize)
         case .incorrect:
-            if mistakeAllowedUsed {
-                // Засчитываем как правильный, но отмечаем, что был ошибочный
-                mistakeUsedThisTurn = true
-                mistakeAllowedUsed = false // Сбросить после одного использования
-                let prize = prizeCalculator.getPrizeAmount(for: currentQuestionIndex)
-                newSession.setScore(prize)
-                answerResultState = .correct
-            } else {
-                let checkpoint = prizeCalculator.getCheckpointPrizeAmount(before: currentQuestionIndex)
-                newSession.setScore(checkpoint)
-                answerResultState = .incorrect
-            }
+            let checkpoint = prizeCalculator.getCheckpointPrizeAmount(before: currentQuestionIndex)
+            newSession.setScore(checkpoint)
+            answerResultState = .incorrect
         }
         
         // НЕ обновляем сессию сразу!
         // session = newSession
         
         // Устанавливаем состояние результата для анимации
-        answerResultState = answerResult == .incorrect && !mistakeUsedThisTurn ? .incorrect : .correct
-
+        answerResultState = answerResult == .incorrect ? .incorrect : .correct
+        
         // Ждём анимации результата
         do {
             try await Task.sleep(for: .seconds(2))
@@ -283,7 +271,7 @@ final class GameViewModel: ObservableObject {
             if session.currentQuestionIndex == 14 {
                 print(" ПОБЕДА! Выигран миллион!")
                 mode = .victoryMillionare
-
+                
             } else {
                 print(" Игра окончена на вопросе \(session.currentQuestionIndex + 1)")
                 print(" Выигрыш: \(session.score) ")
@@ -327,10 +315,7 @@ final class GameViewModel: ObservableObject {
     }
     
     func secondChanceButtonTap() {
-        var session = self.session
-        session.useLifeline(.secondChance)
-        self.session = session
-        mistakeAllowedUsed = true
+        guard session.useSecondChanceLifeline() != nil else { return }
     }
     
     func testScoreboard() {
