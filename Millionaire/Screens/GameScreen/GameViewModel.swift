@@ -125,14 +125,6 @@ final class GameViewModel: ObservableObject {
         gameManager?.$currentSession
             .compactMap { $0 }  // Фильтруем nil
             .removeDuplicates()
-//            .removeDuplicates { old, new in
-//                // Считаем одинаковыми если:
-//                // - Одинаковый индекс текущего вопроса
-//                // - Одинаковое состояние завершения
-//                // (Игнорируем изменение количества вопросов)
-//                old.currentQuestionIndex == new.currentQuestionIndex &&
-//                old.isFinished == new.isFinished
-//            }
             .dropFirst()
             .receive(on: DispatchQueue.main)  // ВАЖНО: UI обновления только на main
             .sink { [weak self] updatedSession in
@@ -144,8 +136,34 @@ final class GameViewModel: ObservableObject {
                 if !updatedSession.isFinished {
                     self.answers = updatedSession.currentQuestion.allAnswers.shuffled()
                 }
+                
+                // Проверяем необходимость догрузки
+                self.checkIfNeedMoreQuestions(session: updatedSession)
             }
             .store(in: &cancellables)
+    }
+    
+    @Published private(set) var isLoadingQuestions = false
+    
+    private func checkIfNeedMoreQuestions(session: GameSession) {
+        let currentIndex = session.currentQuestionIndex
+        let totalLoaded = session.questions.count
+        
+        if totalLoaded - currentIndex <= 2 && totalLoaded < 15 {
+            print("🚨 Экстренная догрузка! Вопрос: \(currentIndex + 1), Загружено: \(totalLoaded)")
+            
+            isLoadingQuestions = true
+            
+            Task(priority: .high) {
+                await gameManager?.loadRemainingQuestions(
+                    categoryID: session.selectedCategory?.id
+                )
+                
+                await MainActor.run { [weak self] in
+                    self?.isLoadingQuestions = false
+                }
+            }
+        }
     }
     
     // MARK: - Game Start
