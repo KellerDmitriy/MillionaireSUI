@@ -123,7 +123,10 @@ final class NavigationCoordinator: ObservableObject {
     // MARK: - GameOver Actions
     
     func startNewGameFromGameOver() {
-        // Специальный метод для прямого перехода к новой игре
+        // 1. Удаляем старый GameViewModel, чтобы создать новый
+        activeGameViewModel = nil
+        
+        // 2. Стартуем новую игру через HomeViewModel
         homeViewModel?.startNewGameDirect()
     }
     
