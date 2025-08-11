@@ -57,12 +57,13 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func showGame() {
+        activeGameViewModel = nil
         lastVisitedScreen = .game
         path = [.game]
     }
     
     func showScoreboard(_ session: GameSession, mode: GameViewModel.ScoreboardMode) {
-        // ✅ Всегда используем актуальную сессию из GameManager
+        // Всегда используем актуальную сессию из GameManager
         guard let actualSession = gameManager?.currentSession else {
             print("⚠️ No current session in GameManager!")
             return
@@ -98,8 +99,14 @@ final class NavigationCoordinator: ObservableObject {
         print("🗺️ Path before: \(path.count) элементов")
         
         switch mode {
-        case .intermediate, .roundWon:
+        case .intermediate:
             popLast()
+            
+        case .roundWon:
+            popLast()
+            // После правильного ответа - переходим к следующему вопросу
+            print("   Вызываем continueAfterScoreboard...")
+            activeGameViewModel?.continueAfterScoreboard()
             
         case .gameOver, .victoryMillionare:
             // При окончании игры - переходим к GameOverView
@@ -124,7 +131,6 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func returnToMainScreenFromGameOver() {
-        // Чистим стек и GameViewModel
         activeGameViewModel = nil
         // Просто возвращаемся на главный экран
         popToRoot()
@@ -137,6 +143,7 @@ final class NavigationCoordinator: ObservableObject {
     
     /// Прямая замена на игру (используется после прямой загрузки)
     func showGameDirect() {
+        activeGameViewModel = nil
         path = [.game]
     }
     

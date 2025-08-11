@@ -39,25 +39,15 @@ final class GameViewModel: ObservableObject {
     private let onNavigateToScoreboard: ((GameSession, ScoreboardMode) -> Void)?
     
     private var session: GameSession {
-        get {
-            guard let currentSession = gameManager?.currentSession else {
-                preconditionFailure("GameManager.currentSession is nil - this should never happen")
-            }
-            return currentSession
+        guard let currentSession = gameManager?.currentSession else {
+            preconditionFailure("GameManager.currentSession is nil - this should never happen")
         }
-        set {
-            gameManager?.updateSession(newValue)
-        }
+        return currentSession
     }
     
     /// Массив вариантов ответа в порядке их отображения
     @Published private(set) var answers: [String] = []
-    //    {
-    //        didSet {
-    //            // Очищаем недоступные варианты при смене ответов (а значит и вопроса)
-    //            disabledAnswers = []
-    //        }
-    //    }
+    
     @Published private(set) var disabledAnswers: Set<String> = []  /// Недоступные для выбора варианты ответов
     @Published var correctAnswer: String?
     @Published var duration: String = "00:00"
@@ -73,6 +63,7 @@ final class GameViewModel: ObservableObject {
     
     // Важно: отменять задачу при деинициализации
     deinit {
+        timerService.stopTimer()
         answerProcessingTask?.cancel()
         
         // Когда GameViewModel уничтожается, все его свойства тоже
@@ -109,7 +100,7 @@ final class GameViewModel: ObservableObject {
         self.timerService = timerService
         self.onNavigateToScoreboard = onNavigateToScoreboard
         
-        // ✅ Вместо этого просто читаем текущее состояние
+        // читаем текущее состояние
         if let currentSession = gameManager.currentSession {
             self.answers = currentSession.currentQuestion.allAnswers.shuffled()
             print("   Инициализирован с \(currentSession.questions.count) вопросами")
@@ -130,11 +121,16 @@ final class GameViewModel: ObservableObject {
             .sink { [weak self] updatedSession in
                 guard let self = self else { return }
                 
-                print("📱 GameViewModel: смена вопроса на №\(updatedSession.currentQuestionIndex + 1)")
-                
+                print("📱 GameViewModel: сессия обновлена")
+                print("   Вопрос №\(updatedSession.currentQuestionIndex + 1) из \(updatedSession.questions.count)")
+
                 // Обновляем answers когда меняется вопрос
-                if !updatedSession.isFinished {
+                if self.selectedAnswer == nil && // Нет выбранного ответа (новый вопрос)
+                   !updatedSession.isFinished { // Игра не завершена
+                    print("    Перемешиваем ответы для нового вопроса")
                     self.answers = updatedSession.currentQuestion.allAnswers.shuffled()
+                } else {
+                    print("    Не перемешиваем - показываем результат")
                 }
                 
                 // Проверяем необходимость догрузки
@@ -177,6 +173,8 @@ final class GameViewModel: ObservableObject {
     }
     
     private func startNewRound() {
+        print("Запускаем таймер для нового вопроса")
+        
         // Печатаем для каждого нового вопроса
         print("category: \(String(describing: session.getCurrentCategory()?.name))")
         print("difficulty: \(session.currentQuestion.difficulty)")
@@ -187,15 +185,65 @@ final class GameViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Continue Game
+    
+    // при возврате со Scoreboard
+    func continueAfterScoreboard() {
+        print("🎮 Продолжаем игру после Scoreboard")
+        
+        // Упрощаем логику - если игра не окончена, значит был правильный ответ
+        // (иначе бы игра завершилась)
+        if !session.isFinished {
+            print("📍 Переход к следующему вопросу...")
+            gameManager?.moveToNextQuestion()
+            
+            // Очищаем UI состояние для нового вопроса
+            selectedAnswer = nil
+            answerResultState = nil
+            correctAnswer = nil
+            disabledAnswers = []
+            audienceVotes = nil
+            
+            // Запускаем таймер для нового вопроса
+            startNewRound()
+        } else {
+            print("⚠️ Не переходим к следующему вопросу: isFinished=\(session.isFinished), answerResult=\(String(describing: answerResultState))")
+        }
+    }
+    
+    // при возврате со Scoreboard с правом на ошибку
+    func continueAfterIncorrectWithSecondChance() {
+        if !session.isFinished {
+            gameManager?.moveToNextQuestion()
+            
+            // Очистка UI
+            selectedAnswer = nil
+            answerResultState = nil
+            correctAnswer = nil
+            disabledAnswers = []
+            
+            startNewRound()
+        }
+    }
+    
     private func onTimeExpired() {
+        //  Защита от повторного срабатывания
+        guard !session.isFinished else {
+               print("⚠️ Таймер сработал, но игра уже завершена")
+               return
+           }
+           
+           //  Защита если уже выбран ответ
+           guard selectedAnswer == nil else {
+               print("⚠️ Таймер сработал, но ответ уже обрабатывается")
+               return
+           }
+        
         audioService.playAnswerLockedSfx()
         stopGame()
         
-        var newSession = session
-        let checkpoint = prizeCalculator.getCheckpointPrizeAmount(before: newSession.currentQuestionIndex)
-        newSession.setScore(checkpoint)
-        newSession.finish()
-        session = newSession
+        gameManager?.finishGameWithTimeout()
+        
         //  Время вышло - показываем скорборд как поражение
         checkGameEnd(answerResult: .incorrect) // ответ не выбран
     }
@@ -258,61 +306,25 @@ final class GameViewModel: ObservableObject {
     @MainActor
     private func processAnswer(_ answer: String) async {
         
-        // Получаем актуальную сессию из GameManager
-        var updatedSession = session  // Это уже читает из gameManager?.currentSession
-        
-        print("Текущий вопрос №\(updatedSession.currentQuestionIndex + 1) из \(updatedSession.questions.count)")
-        
-        print("🎮 Следующий индекс будет: \(updatedSession.currentQuestionIndex + 1)")
-        if updatedSession.currentQuestionIndex + 1 >= updatedSession.questions.count {
-            print("⚠️ ВНИМАНИЕ: Следующего вопроса НЕТ!")
-        }
-        
-        // Сохраняем индекс текущего вопроса ДО обработки
-        let currentQuestionIndex = updatedSession.currentQuestionIndex
-        
         // Сохраняем выбранный ответ — важно для подсветки
+        correctAnswer = session.currentQuestion.correctAnswer
         selectedAnswer = answer
-        correctAnswer = updatedSession.currentQuestion.correctAnswer
         
-        // Обрабатываем ответ — получаем результат, но не начисляем тут ничего
-        guard let answerResult = updatedSession.answer(answer: answer) else {
-            return
-        }
-        
-        // после обработки ответа
-        print("📱 После ответа: индекс стал \(updatedSession.currentQuestionIndex), всего вопросов: \(updatedSession.questions.count)")
-        
-        // Начисляем призы используя PrizeCalculator
-        switch answerResult {
-        case .correct:
-            let prize = prizeCalculator.getPrizeAmount(for: currentQuestionIndex)
-            updatedSession.setScore(prize)
-            
-        case .incorrect:
-            let checkpoint = prizeCalculator.getCheckpointPrizeAmount(before: currentQuestionIndex)
-            updatedSession.setScore(checkpoint)
-            answerResultState = .incorrect
-        }
-        
-        // НЕ обновляем сессию сразу!
-        // session = newSession
+        // Делегируем обработку GameManager
+        guard let answerResult = gameManager?.processAnswer(answer) else { return }
         
         // Устанавливаем состояние результата для анимации
-        answerResultState = answerResult == .incorrect ? .incorrect : .correct
+        answerResultState = answerResult
         
         // Ждём анимации результата
         do {
             try await Task.sleep(for: .seconds(2))
             try Task.checkCancellation()
             
-            // Обновляем GameManager
-            gameManager?.updateSession(updatedSession)
-            // Подписка subscribeToSessionChanges автоматически обновит UI (answers, etc.)
-            
+            // Теперь session уже обновлена через GameManager
             // Проверяем окончание игры
             if answerResult == .correct && !session.isFinished {
-                // Подготовка следующего вопрос
+                // Подготовка к следующему вопросу
                 selectedAnswer = nil
                 answerResultState = nil
                 correctAnswer = nil
@@ -339,9 +351,11 @@ final class GameViewModel: ObservableObject {
                 print(" Выигрыш: \(session.score) ")
                 mode = .gameOver
             }
+            timerService.stopTimer()
         } else {
             mode = .roundWon
             print(" Выигрыш: \(session.score) ")
+            timerService.pauseTimer()
         }
         print(mode)
         // Делегируем навигацию родительскому компоненту
@@ -350,12 +364,8 @@ final class GameViewModel: ObservableObject {
     
     // MARK: - Help Button Actions
     func fiftyFiftyButtonTap() {
-        guard let result = session.useFiftyFiftyLifeline() else {
-            return
-        }
         
-        // Обновляем сессию
-        session = session // Триггерим onSessionUpdated
+        guard let result = gameManager?.useFiftyFiftyLifeline() else { return }
         
         // Помечаем недоступные ответы
         disabledAnswers = result.disabledAnswers
@@ -364,9 +374,8 @@ final class GameViewModel: ObservableObject {
     func audienceButtonTap() {
         let visibleAnswers = answers.filter { !disabledAnswers.contains($0) }
         
-        guard let result = session.useAudienceLifeline(allAnswers: visibleAnswers) else {
-            return
-        }
+        guard let result = gameManager?.useAudienceLifeline(allAnswers: visibleAnswers) else { return }
+        
         var votes = Array(repeating: 0, count: 4)
         for (index, answer) in visibleAnswers.enumerated() {
             if let originalIndex = answers.firstIndex(of: answer) {
@@ -377,7 +386,7 @@ final class GameViewModel: ObservableObject {
     }
     
     func secondChanceButtonTap() {
-        guard session.useSecondChanceLifeline() != nil else { return }
+        guard gameManager?.useSecondChanceLifeline() != nil else { return }
     }
     
     func testScoreboard() {
@@ -415,7 +424,7 @@ extension GameViewModel {
     func stopGame() {
         stopGameResources()
         answerProcessingTask?.cancel()
-        session.finish()
+        gameManager?.finishGameWithTimeout()
         storage.clearSavedSession()
     }
 }
