@@ -43,8 +43,9 @@ struct GameScreen: View {
         }
         .blur(radius: showCustomAlert || showAudienceHelpView ? 5 : 0)
 
-        .onAppear {
-            viewModel.startGame()
+        .task {
+            await viewModel.handleGameStateOnAppear()
+            print("current State\(viewModel.gameState)")
         }
         
         .onDisappear {
@@ -120,7 +121,7 @@ struct GameScreen: View {
             
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {
-                    viewModel.testScoreboard()
+                    viewModel.routeToScoreboardWithIntermediate()
                 }, label: {
                     Image(ImageResource.iconLevels)
                 })

@@ -66,7 +66,7 @@ final class NavigationCoordinator: ObservableObject {
     func continueGame() {
         lastVisitedScreen = .game
         path = [.game]
-        
+        activeGameViewModel?.gameState = .continuedRound
     }
     
     func showScoreboard(_ session: GameSession, mode: GameViewModel.ScoreboardMode) {
@@ -107,10 +107,11 @@ final class NavigationCoordinator: ObservableObject {
         
         switch mode {
         case .intermediate:
+            activeGameViewModel?.gameState = .continuedRound
             popLast()
         case .roundWon:
+            activeGameViewModel?.gameState = .startGame
             popLast()
-            
         case .gameOver, .victoryMillionare:
             // При окончании игры - переходим к GameOverView
             // Всегда берем актуальную сессию

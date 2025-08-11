@@ -102,7 +102,7 @@ final class GameViewModel: ObservableObject {
     
     var lifelines: Set<Lifeline> { session.lifelines }
     
-    var gameState: GameState = .startGame
+    @Published var gameState: GameState = .startGame
     
     // MARK: Init
     init(
@@ -127,7 +127,7 @@ final class GameViewModel: ObservableObject {
             preconditionFailure("GameManager must have active session before creating GameViewModel")
         }
         
-        handleGameStateOnAppear()
+       
         bindTimer()
         subscribeToSessionChanges()
     }
@@ -179,14 +179,16 @@ final class GameViewModel: ObservableObject {
     }
     
     // MARK: - Game State
-    private func handleGameStateOnAppear() {
-        switch gameState {
-        case .startGame:
-            startGame()
-        case .pause:
-            pauseGame()
-        case .continuedRound:
-            resumeGame()
+    func handleGameStateOnAppear() async {
+       await MainActor.run {
+            switch gameState {
+            case .startGame:
+                startGame()
+            case .pause:
+                pauseGame()
+            case .continuedRound:
+                resumeGame()
+            }
         }
     }
     
@@ -405,7 +407,6 @@ final class GameViewModel: ObservableObject {
     }
     
     func routeToScoreboardWithIntermediate() {
-        gameState = .pause
         pauseGame()
         onNavigateToScoreboard?(session, .intermediate)
     }
