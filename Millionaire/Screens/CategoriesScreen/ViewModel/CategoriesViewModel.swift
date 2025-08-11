@@ -11,7 +11,7 @@ import Foundation
 final class CategoriesViewModel: ObservableObject {
     private let gameManager: GameManager
     
-    @Published var selectedCategoryID: Int?
+    @Published var selectedCategory: QuestionCategory?
     @Published var categories: [QuestionCategory] = []
     
     @Published var isLoading: Bool = true
@@ -20,12 +20,12 @@ final class CategoriesViewModel: ObservableObject {
     // MARK: - Initialization
     init(gameManager: GameManager) {
         self.gameManager = gameManager
-        self.selectedCategoryID = gameManager.selectedCategoryID
+        self.selectedCategory = gameManager.selectedCategory
     }
     
-    func selectCategory(_ id: Int?) {
-        selectedCategoryID = id  //  Обновляем локальное (триггерит UI)
-        gameManager.selectCategory(id)  //  Обновляем глобальное
+    func selectCategory(_ category: QuestionCategory?) {
+        selectedCategory = category  //  Обновляем локальное (триггерит UI)
+        gameManager.selectCategory(category)  //  Обновляем глобальное
     }
     
     // MARK: - Load Categories
@@ -58,9 +58,9 @@ final class CategoriesViewModel: ObservableObject {
             }
             
             // Если ничего не выбрано, выбираем "All Categories"
-            if selectedCategoryID == nil {
-                selectedCategoryID = 0
-                gameManager.selectCategory(0)
+            if selectedCategory == nil {
+                selectedCategory = allCategories
+                gameManager.selectCategory(allCategories)
             }
         } catch {
             print("CategoriesViewModel: Error loading categories: \(error)")

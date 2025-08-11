@@ -138,10 +138,10 @@ struct CategoriesScreen: View {
                             CategoryRowView(
                                 index: index,
                                 category: category,
-                                isSelected: viewModel.selectedCategoryID == category.id
+                                isSelected: viewModel.selectedCategory == category
                             )
                             .onTapGesture {
-                                viewModel.selectCategory(category.id)
+                                viewModel.selectCategory(category)
                             }
                         }
                     }
