@@ -63,6 +63,7 @@ final class GameViewModel: ObservableObject {
     
     // Важно: отменять задачу при деинициализации
     deinit {
+        timerService.stopTimer()
         answerProcessingTask?.cancel()
         
         // Когда GameViewModel уничтожается, все его свойства тоже
@@ -167,6 +168,8 @@ final class GameViewModel: ObservableObject {
     }
     
     private func startNewRound() {
+        print("Запускаем таймер для нового вопроса")
+        
         // Печатаем для каждого нового вопроса
         print("category: \(String(describing: session.getCurrentCategory()?.name))")
         print("difficulty: \(session.currentQuestion.difficulty)")
@@ -219,6 +222,18 @@ final class GameViewModel: ObservableObject {
     }
     
     private func onTimeExpired() {
+        //  Защита от повторного срабатывания
+        guard !session.isFinished else {
+               print("⚠️ Таймер сработал, но игра уже завершена")
+               return
+           }
+           
+           //  Защита если уже выбран ответ
+           guard selectedAnswer == nil else {
+               print("⚠️ Таймер сработал, но ответ уже обрабатывается")
+               return
+           }
+        
         audioService.playAnswerLockedSfx()
         stopGame()
         
@@ -331,9 +346,11 @@ final class GameViewModel: ObservableObject {
                 print(" Выигрыш: \(session.score) ")
                 mode = .gameOver
             }
+            timerService.stopTimer()
         } else {
             mode = .roundWon
             print(" Выигрыш: \(session.score) ")
+            timerService.pauseTimer()
         }
         print(mode)
         // Делегируем навигацию родительскому компоненту
