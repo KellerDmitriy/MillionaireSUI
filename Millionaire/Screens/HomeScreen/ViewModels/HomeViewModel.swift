@@ -158,7 +158,7 @@ final class HomeViewModel: ObservableObject {
             return
         }
         
-        navigationCoordinator.showGame()
+        navigationCoordinator.continueGame()
     }
     
 }

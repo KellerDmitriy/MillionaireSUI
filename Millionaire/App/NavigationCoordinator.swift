@@ -32,7 +32,9 @@ enum NavigationRoute: Hashable {
 // MARK: - Navigation Coordinator
 @MainActor
 final class NavigationCoordinator: ObservableObject {
+    
     @Published var path: [NavigationRoute] = []
+
     private(set) var lastVisitedScreen: NavigationRoute?
     
     // Dependencies
@@ -59,6 +61,12 @@ final class NavigationCoordinator: ObservableObject {
     func showGame() {
         lastVisitedScreen = .game
         path = [.game]
+    }
+    
+    func continueGame() {
+        lastVisitedScreen = .game
+        path = [.game]
+        
     }
     
     func showScoreboard(_ session: GameSession, mode: GameViewModel.ScoreboardMode) {
@@ -98,7 +106,9 @@ final class NavigationCoordinator: ObservableObject {
         print("🗺️ Path before: \(path.count) элементов")
         
         switch mode {
-        case .intermediate, .roundWon:
+        case .intermediate:
+            popLast()
+        case .roundWon:
             popLast()
             
         case .gameOver, .victoryMillionare:

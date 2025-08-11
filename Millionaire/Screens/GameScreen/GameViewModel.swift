@@ -11,6 +11,13 @@ import Combine
 
 // MARK: - Navigation States
 extension GameViewModel {
+    
+    enum GameState: Hashable, Equatable {
+        case continuedRound
+        case pause
+        case startGame
+    }
+    
     enum ScoreboardMode: Hashable, Equatable {
         case intermediate
         case roundWon
@@ -18,6 +25,7 @@ extension GameViewModel {
         case gameOver
     }
 }
+
 
 // локальное UI состояние + управление сервисами
 @MainActor
@@ -67,7 +75,7 @@ final class GameViewModel: ObservableObject {
     @Published var showError: Bool = false
     @Published var selectedAnswer: String?
     @Published var answerResultState: AnswerResult?
-    
+
     // Храним текущую задачу для возможности отмены
     private var answerProcessingTask: Task<Void, Never>?
     
@@ -94,6 +102,8 @@ final class GameViewModel: ObservableObject {
     
     var lifelines: Set<Lifeline> { session.lifelines }
     
+    var gameState: GameState = .startGame
+    
     // MARK: Init
     init(
         gameManager: GameManager,
@@ -117,11 +127,13 @@ final class GameViewModel: ObservableObject {
             preconditionFailure("GameManager must have active session before creating GameViewModel")
         }
         
+        handleGameStateOnAppear()
         bindTimer()
         subscribeToSessionChanges()
     }
     
     private func subscribeToSessionChanges() {
+        
         gameManager?.$currentSession
             .compactMap { $0 }  // Фильтруем nil
             .removeDuplicates()
@@ -166,6 +178,18 @@ final class GameViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Game State
+    private func handleGameStateOnAppear() {
+        switch gameState {
+        case .startGame:
+            startGame()
+        case .pause:
+            pauseGame()
+        case .continuedRound:
+            resumeGame()
+        }
+    }
+    
     // MARK: - Game Start
     func startGame() {
         // Стартуем только если нет выбранного ответа И это первый вопрос
@@ -181,7 +205,7 @@ final class GameViewModel: ObservableObject {
         print("category: \(String(describing: session.getCurrentCategory()?.name))")
         print("difficulty: \(session.currentQuestion.difficulty)")
         print("correctAnswer: \(session.currentQuestion.correctAnswer)")
-        
+        gameState = .startGame
         timerService.start30SecondTimer { [weak self] in
             self?.onTimeExpired()
         }
@@ -380,7 +404,8 @@ final class GameViewModel: ObservableObject {
         guard session.useSecondChanceLifeline() != nil else { return }
     }
     
-    func testScoreboard() {
+    func routeToScoreboardWithIntermediate() {
+        gameState = .pause
         pauseGame()
         onNavigateToScoreboard?(session, .intermediate)
     }
@@ -397,6 +422,7 @@ extension GameViewModel {
     
     /// Ставит игру на паузу (при уходе с экрана)
     func pauseGame() {
+        gameState = .pause
         timerService.pauseTimer()
         audioService.pause()
         storage.saveGameSession(session)
@@ -406,7 +432,7 @@ extension GameViewModel {
     func resumeGame() {
         // Возобновляем только если нет выбранного ответа
         guard selectedAnswer == nil else { return }
-        
+        gameState = .continuedRound
         timerService.resumeTimer()
         audioService.resume()
     }

@@ -11,7 +11,7 @@ import Foundation
 protocol ITimerService {
     var displayPublisher: Published<TimerDisplayData>.Publisher { get }
     var totalSeconds: Int { get }
-    
+    var isRunning: Bool { get }
     func start30SecondTimer(completion: @escaping () -> Void)
     func pauseTimer()
     func resumeTimer()
@@ -22,16 +22,20 @@ final class TimerService: ITimerService {
     
     @Published private(set) var displayData: TimerDisplayData = TimerDisplayData(formattedTime: "00:00", type: .normal)
     @Published private(set) var progress: Float = 1.0 // 100% в начале (30 сек)
+    @Published private(set) var isPaused = false
     
     var displayPublisher: Published<TimerDisplayData>.Publisher { $displayData }
-  
+    
+    
     private(set) var totalSeconds: Int = 0
     private var remaining: Int = 0
     private var onComplete: (() -> Void)?
     
     private var cancellable: AnyCancellable?
-    private var isPaused = false
     
+    var isRunning: Bool {
+        !isPaused
+    }
     // MARK: - Public API
     func start30SecondTimer(completion: @escaping () -> Void) {
         startTimer(seconds: 30, completion: completion)
@@ -50,12 +54,14 @@ final class TimerService: ITimerService {
         cancellable?.cancel()
         cancellable = nil
         isPaused = true
+        print("таймер на паузе, осталось\(remaining)cek")
     }
     
     func resumeTimer() {
         guard isPaused, remaining > 0 else { return }
-        startPublisher()
         isPaused = false
+        startPublisher()
+        print("таймер продолжает работать, осталось\(remaining)cek")
     }
     
     func stopTimer() {
@@ -76,13 +82,22 @@ final class TimerService: ITimerService {
             .sink { [weak self] _ in
                 guard let self else { return }
                 
-                remaining -= 1
-                progress = Float(remaining) / Float(totalSeconds)
-                updateDisplay()
+                // Если на паузе, ничего не делаем
+                if self.isPaused {
+                    return
+                }
                 
-                if remaining <= 0 {
-                    stopTimer()
-                    onComplete?()
+                // Уменьшаем оставшееся время
+                self.remaining -= 1
+                
+                // Обновляем прогресс и отображение
+                self.progress = Float(self.remaining) / Float(self.totalSeconds)
+                self.updateDisplay()
+                
+                // Если время вышло, останавливаем таймер и вызываем onComplete
+                if self.remaining <= 0 {
+                    self.stopTimer()
+                    self.onComplete?()
                 }
             }
     }
