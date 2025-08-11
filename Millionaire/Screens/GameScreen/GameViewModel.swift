@@ -121,11 +121,16 @@ final class GameViewModel: ObservableObject {
             .sink { [weak self] updatedSession in
                 guard let self = self else { return }
                 
-                print("📱 GameViewModel: смена вопроса на №\(updatedSession.currentQuestionIndex + 1)")
-                
+                print("📱 GameViewModel: сессия обновлена")
+                print("   Вопрос №\(updatedSession.currentQuestionIndex + 1) из \(updatedSession.questions.count)")
+
                 // Обновляем answers когда меняется вопрос
-                if !updatedSession.isFinished {
+                if self.selectedAnswer == nil && // Нет выбранного ответа (новый вопрос)
+                   !updatedSession.isFinished { // Игра не завершена
+                    print("    Перемешиваем ответы для нового вопроса")
                     self.answers = updatedSession.currentQuestion.allAnswers.shuffled()
+                } else {
+                    print("    Не перемешиваем - показываем результат")
                 }
                 
                 // Проверяем необходимость догрузки
