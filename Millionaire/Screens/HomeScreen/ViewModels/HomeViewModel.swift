@@ -18,7 +18,6 @@ final class HomeViewModel: ObservableObject {
     @Published var errorMessage: String = ""
     
     // MARK: - Dependencies
-    private let storage: IStorageService
     private var gameManager: GameManager
     private let navigationCoordinator: NavigationCoordinator
     
@@ -29,18 +28,16 @@ final class HomeViewModel: ObservableObject {
     
     // MARK: - Init
     init(gameManager: GameManager,
-         storage: IStorageService = StorageService.shared,
          navigationCoordinator: NavigationCoordinator) {
         self.gameManager = gameManager
-        self.storage = storage
         self.navigationCoordinator = navigationCoordinator
         
-        // Попытка восстановить сессию из стораджа, если в менеджере нет активной
-        if gameManager.currentSession == nil,
-           let savedSession = storage.loadGameSession(),
-           savedSession.isFinished == false {
-            gameManager.restoreSession(savedSession)
-        }
+//        // Попытка восстановить сессию из стораджа, если в менеджере нет активной
+//        if gameManager.currentSession == nil,
+//           let savedSession = storage.loadGameSession(),
+//           savedSession.isFinished == false {
+//            gameManager.restoreSession(savedSession)
+//        }
         
         updateViewState()
         

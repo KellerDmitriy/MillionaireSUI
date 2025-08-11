@@ -282,34 +282,34 @@ extension GameSession {
     }
 }
 
-#Preview("Game - Start") {
-    let questions = (0..<15).map { index in
-        QuestionDTO(
-            difficulty: index < 5 ? .easy : index < 10 ? .medium : .hard,
-            category: "Preview Category",
-            question: "Question \(index + 1): What is the answer?",
-            correctAnswer: "Correct",
-            incorrectAnswers: ["Wrong A", "Wrong B", "Wrong C"]
-        )
-    }
-    
-    if let session = GameSession(questions: questions) {
-        // Используем инициализатор с lastSession
-        let gameManager = GameManager(
-            bestScore: 0,
-            lastSession: session  // Передаем сессию через инициализатор
-        )
-        
-        let viewModel = GameViewModel(
-            gameManager: gameManager,
-            onNavigateToScoreboard: { _, _ in },
-            audioService: MockAudioService()
-        )
-        
-        return NavigationStack {
-            GameScreen(viewModel: viewModel)
-        }
-    } else {
-        return Text("Preview failed")
-    }
-}
+// #Preview("Game - Start") {
+//    let questions = (0..<15).map { index in
+//        QuestionDTO(
+//            difficulty: index < 5 ? .easy : index < 10 ? .medium : .hard,
+//            category: "Preview Category",
+//            question: "Question \(index + 1): What is the answer?",
+//            correctAnswer: "Correct",
+//            incorrectAnswers: ["Wrong A", "Wrong B", "Wrong C"]
+//        )
+//    }
+//    
+//    if let session = GameSession(questions: questions) {
+//        // Используем инициализатор с lastSession
+//        let gameManager = GameManager(
+//            bestScore: 0,
+//            lastSession: session  // Передаем сессию через инициализатор
+//        )
+//        
+//        let viewModel = GameViewModel(
+//            gameManager: gameManager,
+//            onNavigateToScoreboard: { _, _ in },
+//            audioService: MockAudioService()
+//        )
+//        
+//        return NavigationStack {
+//            GameScreen(viewModel: viewModel)
+//        }
+//    } else {
+//        return Text("Preview failed")
+//    }
+// }

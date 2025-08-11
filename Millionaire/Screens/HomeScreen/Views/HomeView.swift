@@ -43,14 +43,14 @@ struct HomeView: View {
     @StateObject private var navigationCoordinator = NavigationCoordinator()
     @StateObject private var viewModel: HomeViewModel
     @State private var showRules = false
-
+    
     init(gameManager: GameManager) {
         let coordinator = NavigationCoordinator()
-               self._navigationCoordinator = StateObject(wrappedValue: coordinator)
-               self._viewModel = StateObject(wrappedValue: HomeViewModel(
-                   gameManager: gameManager,
-                   navigationCoordinator: coordinator
-               ))
+        self._navigationCoordinator = StateObject(wrappedValue: coordinator)
+        self._viewModel = StateObject(wrappedValue: HomeViewModel(
+            gameManager: gameManager,
+            navigationCoordinator: coordinator
+        ))
     }
     
     var body: some View {
@@ -90,7 +90,7 @@ struct HomeView: View {
                 navigationCoordinator.destinationView(for: route)
             }
         }
-
+        
         .onChange(of: navigationCoordinator.path) { newPath in
             viewModel.onNavigationChange(newPath)
         }
@@ -203,25 +203,22 @@ struct HomeView: View {
 }
 
 // MARK: - Preview
-#Preview("First Start") {
-    NavigationView {
-        HomeView(
-            gameManager: GameManager()
-        )
-    }
-}
-
-#Preview("Second Start with Best Score") {
+#Preview("Home - First Start") {
     HomeView(
-        gameManager: GameManager(bestScore: 125000)
+        gameManager: GameManager.makeForPreview()
     )
 }
 
-#Preview("Not Completed Game") {
+#Preview("Home - With Best Score") {
     HomeView(
-        gameManager: GameManager(
-            bestScore: 32000,
-            lastSession: .preview()
+        gameManager: GameManager.makeForPreview(withBestScore: 125000)
+    )
+}
+
+#Preview("Game Screen") {
+    GameScreen(
+        viewModel: GameViewModel(
+            gameManager: GameManager.makeForPreview(withActiveSession: true)
         )
     )
 }
@@ -243,7 +240,7 @@ private extension GameSession {
         guard let session = GameSession(questions: questions) else {
             fatalError("Failed to create GameSession in preview()")
         }
-
+        
         return session
     }
 }
