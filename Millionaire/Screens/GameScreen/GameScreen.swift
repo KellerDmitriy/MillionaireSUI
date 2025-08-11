@@ -42,7 +42,7 @@ struct GameScreen: View {
             .allowsHitTesting(viewModel.selectedAnswer == nil)
         }
         .blur(radius: showCustomAlert || showAudienceHelpView ? 5 : 0)
-
+        
         .onAppear {
             viewModel.startGame()
         }
@@ -62,7 +62,7 @@ struct GameScreen: View {
                 break
             }
         }
-
+        
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .overlay(
@@ -220,7 +220,7 @@ struct GameScreen: View {
         
         // Если выбранный ответ был неправильным, но подсказка активирована
         if selected == answer {
-
+            
             switch viewModel.answerResultState {
             case .correct:
                 return .correct
@@ -235,7 +235,7 @@ struct GameScreen: View {
            answer == viewModel.correctAnswer {
             return .correct
         }
-
+        
         return .regular
     }
     
@@ -260,41 +260,56 @@ extension GameSession {
         
         guard var session = GameSession(questions: questions) else { return nil }
         
-        // Продвигаемся до нужного вопроса
-        for _ in 0..<atQuestion {
-            _ = session.answer(answer: session.currentQuestion.correctAnswer)
+        // Продвигаемся до нужного вопроса используя новые методы
+        for index in 0..<atQuestion {
+            // Проверяем, что не вышли за границы
+            if index < questions.count - 1 {
+                session.moveToNextQuestion()
+            }
         }
         
+        // Устанавливаем счет
         session.setScore(withScore)
         
-//        // Настраиваем подсказки
-//        let allLifelines: Set<Lifeline> = [.fiftyFifty, .audience, .secondChance]
-//        for used in allLifelines.subtracting(lifelines) {
-//            session.useLifeline(used)
-//        }
-        
+        //        // Настраиваем подсказки (убираем использованные)
+        //        let allLifelines: Set<Lifeline> = [.fiftyFifty, .audience, .secondChance]
+        //        for lifelineToRemove in allLifelines.subtracting(lifelines) {
+        //            // Нужно добавить метод для удаления подсказки без её использования
+        //            session.lifelines.remove(lifelineToRemove)
+        //        }
+        //
         return session
     }
 }
 
-// Тогда Preview становится проще:
-#Preview("Game - Mid Game") {
-    if let session = GameSession.makeForPreview(
-        atQuestion: 7,
-        withScore: 10000,
-        lifelines: [.audience]
-    ) {
-        let gameManager = GameManager(bestScore: 50000, lastSession: session)
+#Preview("Game - Start") {
+    let questions = (0..<15).map { index in
+        QuestionDTO(
+            difficulty: index < 5 ? .easy : index < 10 ? .medium : .hard,
+            category: "Preview Category",
+            question: "Question \(index + 1): What is the answer?",
+            correctAnswer: "Correct",
+            incorrectAnswers: ["Wrong A", "Wrong B", "Wrong C"]
+        )
+    }
+    
+    if let session = GameSession(questions: questions) {
+        // Используем инициализатор с lastSession
+        let gameManager = GameManager(
+            bestScore: 0,
+            lastSession: session  // Передаем сессию через инициализатор
+        )
         
-        NavigationStack {
-            GameScreen(
-                viewModel: GameViewModel(
-                    gameManager: gameManager,
-                    audioService: MockAudioService()
-                )
-            )
+        let viewModel = GameViewModel(
+            gameManager: gameManager,
+            onNavigateToScoreboard: { _, _ in },
+            audioService: MockAudioService()
+        )
+        
+        return NavigationStack {
+            GameScreen(viewModel: viewModel)
         }
     } else {
-        Text("Preview failed")
+        return Text("Preview failed")
     }
 }

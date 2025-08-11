@@ -60,7 +60,7 @@ struct GameSession: Hashable, Codable {
         questions[currentQuestionIndex]
     }
     /// Флаг, активирована ли подсказка второй шанс
-    private var secondChanceActive: Bool = false
+    private(set) var secondChanceActive: Bool = false
     
     init?(questions: [QuestionDTO]) {
         
@@ -104,36 +104,32 @@ struct GameSession: Hashable, Codable {
         score = amount
     }
     
-    mutating func finish() {
-        isFinished = true
-    }
-    
-    /// Функция, возвращающая результат, был ответ верный или нет, и переходящая к следующему вопросу, если таковой есть
-    mutating func answer(answer: String) -> AnswerResult? {
-        // Проверяем, что игра не закончена
-        guard !isFinished else { return nil }
-        
+    /// Проверяет, правильный ли ответ, БЕЗ перехода к следующему вопросу
+    func checkAnswer(_ answer: String) -> AnswerResult {
         if answer == currentQuestion.correctAnswer {
-            // Ничего не начисляем — пусть это делает GameManager
-            // Просто переходим к следующему вопросу
-            
-            nextQuestionOrFinish()
-            if secondChanceActive {
-                secondChanceActive = false
-            }
             return .correct
         } else {
-//            если активировано право на ошибку то продолжить игру
-            if secondChanceActive {
-                secondChanceActive = false
-                nextQuestionOrFinish()
-                return .incorrect
-                
-            }
-            // Отметим, что игра завершена. Какую сумму дать - решает GameManager.
-            isFinished = true
             return .incorrect
         }
+    }
+
+    /// Переходит к следующему вопросу
+    mutating func moveToNextQuestion() {
+        print("📦 GameSession.moveToNextQuestion()")
+        print("   Было: индекс=\(currentQuestionIndex), всего вопросов=\(questions.count)")
+
+        if currentQuestionIndex + 1 < questions.count {
+            currentQuestionIndex += 1
+            print("   ✅ Стало: индекс=\(currentQuestionIndex)")
+        } else {
+            print("   🏁 Вопросы закончились! Победа!")
+            isFinished = true
+        }
+    }
+
+    /// Завершает игру (для случаев timeout или неправильного ответа)
+    mutating func finish() {
+        isFinished = true
     }
     
     /// Пытается воспользоваться подсказкой 50:50, если она доступна, и сообщает наружу о результате
@@ -185,6 +181,10 @@ struct GameSession: Hashable, Codable {
         secondChanceActive = true
         print("Подсказка 'Право на ошибку' активирована")
         return SecondChanceLifelineResult(isActive: true)
+    }
+    // Метод для деактивации после использования
+    mutating func deactivateSecondChance() {
+        secondChanceActive = false
     }
     
     private mutating func nextQuestionOrFinish() {

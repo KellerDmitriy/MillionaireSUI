@@ -48,7 +48,7 @@ struct ScoreboardView: View {
          mode: GameViewModel.ScoreboardMode = .intermediate,
          onAction: @escaping () -> Void,
          onClose: @escaping () -> Void) {
-        self.viewModel = ScoreboardViewModel(gameSession: session)
+        self.viewModel = ScoreboardViewModel(gameSession: session, mode: mode)
         self.mode = mode
         self.onAction = onAction
         self.onClose = onClose
