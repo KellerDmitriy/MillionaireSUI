@@ -156,66 +156,6 @@ final class GameManager: ObservableObject {  // Управляет сессия�
         self.currentSession = session
     }
     
-//    /// Фоновая догрузка medium и hard
-//    func ensureMinimumQuestions(totalNeeded: Int, categoryID: Int?) async {
-//        // Проверяем наличие сессии
-//        guard var session = self.currentSession else {
-//            print("⚠️ GameManager: No current session for background loading")
-//            return
-//        }
-//        
-//        print("📦 GameManager: Начинаем догрузку. Сейчас вопросов: \(session.questions.count)")
-//        
-//        var attempts = 0
-//        let maxAttempts = 5
-//        let delayBetweenAttempts: TimeInterval = 5
-//        
-//        while session.questions.count < totalNeeded && attempts < maxAttempts {
-//            let remaining = totalNeeded - session.questions.count
-//            let batchSize = min(5, remaining)
-//            
-//            do {
-//                let difficulty = self.pickNextDifficulty(for: session)
-//                
-//                let newQuestions = try await self.questionRepository.fetchQuestions(
-//                    amount: batchSize,
-//                    categoryID: categoryID,
-//                    difficulty: difficulty
-//                )
-//                
-//                session.appendQuestions(newQuestions) // обновляем локальную копию
-//                self.currentSession = session // сохраняем обратно в currentSession
-//                
-//                print("📦 GameManager: После append стало \(session.questions.count) вопросов")
-//                
-//                if session.questions.count >= totalNeeded {
-//                    break
-//                }
-//            } catch {
-//                print("⚠️ Попытка \(attempts + 1) не удалась: \(error)")
-//            }
-//            
-//            attempts += 1
-//            // Небольшая задержка между попытками
-//            if attempts < maxAttempts {
-//                try? await Task.sleep(nanoseconds: UInt64(delayBetweenAttempts * 1_000_000_000))
-//            }
-//        }
-//        
-//        print("📦 Итоговое количество вопросов: \(session.questions.count)")
-//    }
-//    
-//    private func pickNextDifficulty(for session: GameSession) -> QuestionDifficulty {
-//        let count = session.questions.count
-//        if count < 5 {
-//            return .easy
-//        } else if count < 10 {
-//            return .medium
-//        } else {
-//            return .hard
-//        }
-//    }
-    
     /// Восстанавливает сохранённую сессию
     func restoreSession(_ session: GameSession) {
         Task {
@@ -257,7 +197,7 @@ extension GameManager {
             // UserDefaults.standard.set(bestScore, forKey: "bestScore")
         }
         
-        // Очищаем текущую сессию
-        currentSession = nil
+        // Финалим текущую сессию
+        currentSession?.finish()
     }
 }
