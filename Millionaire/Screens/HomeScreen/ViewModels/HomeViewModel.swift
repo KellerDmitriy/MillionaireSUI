@@ -18,7 +18,6 @@ final class HomeViewModel: ObservableObject {
     @Published var errorMessage: String = ""
     
     // MARK: - Dependencies
-    private let storage: IStorageService
     private var gameManager: GameManager
     private let navigationCoordinator: NavigationCoordinator
     
@@ -29,18 +28,16 @@ final class HomeViewModel: ObservableObject {
     
     // MARK: - Init
     init(gameManager: GameManager,
-         storage: IStorageService = StorageService.shared,
          navigationCoordinator: NavigationCoordinator) {
         self.gameManager = gameManager
-        self.storage = storage
         self.navigationCoordinator = navigationCoordinator
         
-        // Попытка восстановить сессию из стораджа, если в менеджере нет активной
-        if gameManager.currentSession == nil,
-           let savedSession = storage.loadGameSession(),
-           savedSession.isFinished == false {
-            gameManager.restoreSession(savedSession)
-        }
+        //        // Попытка восстановить сессию из стораджа, если в менеджере нет активной
+        //        if gameManager.currentSession == nil,
+        //           let savedSession = storage.loadGameSession(),
+        //           savedSession.isFinished == false {
+        //            gameManager.restoreSession(savedSession)
+        //        }
         
         updateViewState()
         
@@ -77,17 +74,6 @@ final class HomeViewModel: ObservableObject {
         navigationCoordinator.showCategories()
     }
     
-    // MARK: - Withdrawal
-    func withdrawAndEndGame() {
-        // Завершаем текущую сессию с текущим счетом
-        if let session = gameManager.currentSession {
-            gameManager.endGame(withScore: session.score)
-            
-            // Переходим к GameOver, а не на главный экран
-            navigationCoordinator.showGameOverAfterWithdrawal(session)
-        }
-    }
-    
     // MARK: - Private Methods
     private func updateViewState() {
         let hasActive = gameManager.currentSession?.isFinished == false
@@ -98,6 +84,11 @@ final class HomeViewModel: ObservableObject {
             hasScore: hasScore
         )
         self.bestScore = gameManager.bestScore
+        
+        print("📊 HomeViewModel state updated:")
+        print("   - View mode: \(viewMode)")
+        print("   - Best score: \(bestScore)")
+        print("   - Has active game: \(hasActive)")
     }
     
     private func startGame(type: GameType) async {
@@ -161,4 +152,53 @@ final class HomeViewModel: ObservableObject {
         navigationCoordinator.showGame()
     }
     
+    // MARK: - Public Methods for External Updates
+    
+    /// Вызывается после завершения игры для обновления UI
+    func refreshAfterGameEnd() {
+        updateViewState()
+    }
+    
+    /// Вызывается при возврате из настроек
+    func refreshAfterSettings() {
+        updateViewState()
+    }
+    
+}
+
+// MARK: - Debug Extension
+#if DEBUG
+extension HomeViewModel {
+    func debugPrintState() {
+        print("🔍 HomeViewModel Debug State:")
+        print("   - bestScore (local): \(bestScore)")
+        print("   - bestScore (gameManager): \(gameManager.bestScore)")
+        print("   - viewMode: \(viewMode)")
+        print("   - hasActiveGame: \(hasActiveGame)")
+        print("   - currentSession: \(gameManager.currentSession != nil ? "exists" : "nil")")
+    }
+}
+#endif
+
+extension HomeViewModel {
+    
+    // MARK: - Withdrawal
+    func withdrawAndEndGame() {
+        print("💰 HomeViewModel: Processing withdrawal")
+        
+        // Завершаем текущую сессию с текущим счетом
+        if let session = gameManager.currentSession {
+            let finalScore = session.score
+            print("   Final score: $\(finalScore)")
+            
+            // Завершаем игру
+            gameManager.endGame(withScore: finalScore)
+            
+            // Обновляем UI состояние
+            updateViewState()
+            
+            // НЕ вызываем навигацию здесь!
+            // Пусть NavigationCoordinator сам управляет переходом
+        }
+    }
 }

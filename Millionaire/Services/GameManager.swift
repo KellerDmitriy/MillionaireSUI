@@ -7,35 +7,110 @@
 
 import Foundation
 
-/// Менеджер, хранящий  глобальное состояние (сессия, bestScore, категории, уровни сложности)
-
+// Менеджер, хранящий  глобальное состояние (сессия, bestScore, категории, уровни сложности)
+// MARK: - GameManager (единственный владелец StorageService)
 @MainActor
 final class GameManager: ObservableObject {  // Управляет сессиями
     private let questionRepository: IQuestionRepository
+    private let storage: IStorageService
     
     /// Лучший результат, если он есть
-    private(set) var bestScore: Int
+    private(set) var bestScore: Int {
+        didSet {
+            storage.saveBestScore(bestScore)
+        }
+    }
     
-    @Published var selectedCategory: QuestionCategory?
+    @Published var selectedCategory: QuestionCategory? {
+        didSet {
+            storage.saveSelectedCategory(selectedCategory?.id)
+        }
+    }
+    
     //  текущий выбор для новой игры
     /// Модель последней игры, если она есть
-    @Published private(set) var currentSession: GameSession?
+    @Published private(set) var currentSession: GameSession? {
+        didSet {
+            // Автосохранение при изменении
+            if let session = currentSession, !session.isFinished {
+                storage.saveGameSession(session)
+            } else if currentSession?.isFinished == true {
+                storage.clearSavedSession()
+            }
+        }
+    }
     
     func updateSession(_ session: GameSession) {
         self.currentSession = session
     }
     
     init(
-        questionRepository: QuestionRepository = QuestionRepository(),
-        bestScore: Int = 0,
-        lastSession: GameSession? = nil
+        questionRepository: IQuestionRepository = QuestionRepository(),
+        storage: IStorageService = StorageService.shared // Используем синглтон по умолчанию
     ) {
         self.questionRepository = questionRepository
+        self.storage = storage
         
-        // TODO: Добавить чтение начальных значений из UserDefaults?
-        self.bestScore = bestScore
-        self.currentSession = lastSession
+        // Загружаем сохраненные данные
+        self.bestScore = storage.loadBestScore()
+        
+        // Восстанавливаем сессию если есть
+        if let savedSession = storage.loadGameSession(), !savedSession.isFinished {
+            self.currentSession = savedSession
+        }
+        
+        // Загружаем выбранную категорию
+        if let categoryId = storage.loadSelectedCategory() {
+            self.selectedCategory = QuestionCategory(id: categoryId, name: "")
+        }
     }
+    
+    // MARK: - Public Storage Methods (централизованный доступ)
+    
+    /// Сохраняет текущее состояние игры
+    func saveGameState() {
+        if let session = currentSession, !session.isFinished {
+            storage.saveGameSession(session)
+        }
+    }
+    
+    /// Очищает сохраненную сессию
+    func clearSavedGame() {
+        storage.clearSavedSession()
+    }
+    
+    /// Проверяет наличие сохраненной игры
+    func hasSavedGame() -> Bool {
+        return storage.loadGameSession() != nil
+    }
+    
+    /// Загружает статистику
+    func getStatistics() -> GameStatistics {
+        return storage.loadStatistics()
+    }
+    
+    /// Обновляет статистику после игры
+    func updateStatistics(questionsAnswered: Int, winnings: Int, won: Bool, lifelinesUsed: Set<Lifeline>) {
+        var stats = storage.loadStatistics()
+        stats.recordGame(
+            questionsAnswered: questionsAnswered,
+            winnings: winnings,
+            won: won,
+            lifelinesUsed: lifelinesUsed
+        )
+        storage.saveStatistics(stats)
+    }
+    
+    /// Настройки звука
+    func isSoundEnabled() -> Bool {
+        return storage.loadSoundEnabled()
+    }
+    
+    func setSoundEnabled(_ enabled: Bool) {
+        storage.saveSoundEnabled(enabled)
+    }
+    
+    // TODO: Проверить остальные:
     
     func selectCategory(_ category: QuestionCategory?) {
         selectedCategory = category
@@ -301,4 +376,52 @@ extension GameManager {
         currentSession = session
         return result
     }
+}
+
+// MARK: - Testing Support
+extension GameManager {
+#if DEBUG
+    /// Фабричный метод для тестирования с моками
+    @MainActor
+    static func makeForTesting(
+        questionRepository: IQuestionRepository = MockQuestionRepository(),
+        storage: IStorageService = MockStorageService()
+    ) -> GameManager {
+        return GameManager(
+            questionRepository: questionRepository,
+            storage: storage
+        )
+    }
+    
+    /// Создает GameManager с предустановленными данными для Preview
+    @MainActor
+    static func makeForPreview(
+        withBestScore bestScore: Int = 0,
+        withActiveSession: Bool = false
+    ) -> GameManager {
+        let mockRepo = MockQuestionRepository()
+        mockRepo.setupForSuccessfulGame()
+        
+        let mockStorage = MockStorageService()
+        if bestScore > 0 {
+            mockStorage.saveBestScore(bestScore)
+        }
+        
+        let manager = GameManager(
+            questionRepository: mockRepo,
+            storage: mockStorage
+        )
+        
+        if withActiveSession {
+            // Создаем тестовую сессию
+            let questions = MockQuestionRepository.createPredictableQuestions()
+            if var session = GameSession(questions: questions) {
+                session.setScore(5000)
+                manager.currentSession = session
+            }
+        }
+        
+        return manager
+    }
+#endif
 }
