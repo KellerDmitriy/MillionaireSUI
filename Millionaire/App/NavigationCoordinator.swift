@@ -39,10 +39,24 @@ final class NavigationCoordinator: ObservableObject {
     private weak var gameManager: GameManager?
     private weak var homeViewModel: HomeViewModel?
     
+    // Флаг для отслеживания withdrawal
+    private var isWithdrawalInProgress = false
+    
+    // хранение активного ViewModel
+    private var activeGameViewModel: GameViewModel?
+    
     // MARK: - Setup
     func setup(gameManager: GameManager, homeViewModel: HomeViewModel) {
         self.gameManager = gameManager
         self.homeViewModel = homeViewModel
+    }
+    
+    // MARK: - Game ViewModel Management
+    
+    private func cleanupGameViewModel() {
+        print("🧹 Cleaning up GameViewModel")
+        activeGameViewModel?.stopGame()  // Останавливаем таймер и аудио
+        activeGameViewModel = nil
     }
     
     // MARK: - Navigation Methods
@@ -69,8 +83,10 @@ final class NavigationCoordinator: ObservableObject {
             return
         }
         print("🗺️ Navigation: showScoreboard")
-        print("   Актуально из GM: \(actualSession.questions.count) вопросов, индекс: \(actualSession.currentQuestionIndex)")
-
+        
+        // При показе scoreboard приостанавливаем игру
+        activeGameViewModel?.pauseGame()
+        
         lastVisitedScreen = .scoreboard(actualSession, mode)
         path.append(.scoreboard(actualSession, mode))
     }
@@ -80,12 +96,27 @@ final class NavigationCoordinator: ObservableObject {
             print("DEBUG: skip duplicate gameOver push")
             return
         }
+        
+        print("🎮 Showing GameOver, cleaning up game resources")
+        
+        // Останавливаем игровые ресурсы перед переходом
+        cleanupGameViewModel()
+        
+        // Удаляем ScoreboardView из стека если она там есть
+        path.removeAll { route in
+            if case .scoreboard = route { return true }
+            return false
+        }
+        
         lastVisitedScreen = .gameOver(session, mode)
         path.append(.gameOver(session, mode))
+        print("🎮 Showing GameOver, path count: \(path.count)")
     }
     
     func popToRoot() {
+        cleanupGameViewModel()  // Очищаем при возврате на главный
         path.removeAll()
+        isWithdrawalInProgress = false
     }
     
     func popLast() {
@@ -96,42 +127,78 @@ final class NavigationCoordinator: ObservableObject {
     
     func handleScoreboardClose(mode: GameViewModel.ScoreboardMode, session: GameSession) {
         print("🗺️ Navigation: handleScoreboardClose, mode: \(mode)")
-        print("🗺️ Path before: \(path.count) элементов")
+        print("   isWithdrawalInProgress: \(isWithdrawalInProgress)")
+        
+        // Получаем актуальную сессию
+        let actualSession = gameManager?.currentSession ?? session
+        print("   actualSession.isFinished: \(actualSession.isFinished)")
+        
+        // Если был withdrawal, игра уже завершена - переходим к GameOver
+        if isWithdrawalInProgress || actualSession.isFinished {
+            isWithdrawalInProgress = false
+            // Получаем актуальную сессию с финальным счетом
+            showGameOver(actualSession, mode: isWithdrawalInProgress ? .intermediate : mode)
+            return
+        }
         
         switch mode {
         case .intermediate:
             popLast()
+            activeGameViewModel?.resumeGame()  // Возобновляем игру
             
         case .roundWon:
             popLast()
-            // После правильного ответа - переходим к следующему вопросу
-            print("   Вызываем continueAfterScoreboard...")
+            print("   Продолжаем игру после правильного ответа...")
             activeGameViewModel?.continueAfterScoreboard()
             
         case .gameOver, .victoryMillionare:
             // При окончании игры - переходим к GameOverView
-            // Всегда берем актуальную сессию
-            guard let actualSession = gameManager?.currentSession else {
-                print("⚠️ No current session, using provided")
-                showGameOver(session, mode: mode)
-                return
-            }
             showGameOver(actualSession, mode: mode)
         }
+    }
+    
+    // MARK: - Withdrawal Flow
+    
+    func handleWithdrawal() {
+        print("💰 Withdrawal initiated")
+        isWithdrawalInProgress = true
+        
+        // Останавливаем игровые ресурсы сразу
+        activeGameViewModel?.pauseGame() // Сразу останавливаем таймер
+        
+        // Завершаем игру через HomeViewModel
+        homeViewModel?.withdrawAndEndGame()
+    }
+    
+    func showGameOverAfterWithdrawal(_ session: GameSession) {
+        print("💰 Showing GameOver after withdrawal")
+        isWithdrawalInProgress = true
+        
+        // Останавливаем игру полностью
+        cleanupGameViewModel()
+        
+        // Убираем scoreboard из стека и показываем GameOver
+        path.removeAll { route in
+            if case .scoreboard = route { return true }
+            return false
+        }
+        
+        // Показываем GameOver с режимом intermediate (забрали деньги)
+        path.append(.gameOver(session, .intermediate))
     }
     
     // MARK: - GameOver Actions
     
     func startNewGameFromGameOver() {
         // 1. Удаляем старый GameViewModel, чтобы создать новый
-        activeGameViewModel = nil
+        cleanupGameViewModel()
         
         // 2. Стартуем новую игру через HomeViewModel
         homeViewModel?.startNewGameDirect()
     }
     
     func returnToMainScreenFromGameOver() {
-        activeGameViewModel = nil
+        cleanupGameViewModel()
         // Просто возвращаемся на главный экран
         popToRoot()
     }
@@ -143,12 +210,9 @@ final class NavigationCoordinator: ObservableObject {
     
     /// Прямая замена на игру (используется после прямой загрузки)
     func showGameDirect() {
-        activeGameViewModel = nil
+        cleanupGameViewModel()
         path = [.game]
     }
-    
-    // хранение активного ViewModel
-    private var activeGameViewModel: GameViewModel?
     
     // MARK: - View Factory
     @ViewBuilder
@@ -173,7 +237,7 @@ final class NavigationCoordinator: ObservableObject {
                 mode: mode,
                 onAction: { [weak self] in
                     // Логика withdrawal - забрать деньги и завершить игру
-                    self?.homeViewModel?.withdrawAndEndGame()
+                    self?.handleWithdrawal()
                 },
                 onClose: { [weak self] in
                     //                    Логика переходов от ScoreboardView:
@@ -229,8 +293,8 @@ final class NavigationCoordinator: ObservableObject {
     // MARK: - ViewModels Factory
     private func createGameViewModel() -> GameViewModel {
         guard let gameManager = gameManager else {
-                preconditionFailure("GameManager is required for GameViewModel")
-            }
+            preconditionFailure("GameManager is required for GameViewModel")
+        }
         
         // Проверяем что есть активная сессия
         guard gameManager.currentSession != nil else {
@@ -248,16 +312,4 @@ final class NavigationCoordinator: ObservableObject {
         )
     }
     
-    func showGameOverAfterWithdrawal(_ session: GameSession) {
-        // Показываем GameOver с режимом intermediate (забрали деньги)
-        path.append(.gameOver(session, .intermediate))
-    }
-}
-
-// MARK: - Helper Extensions
-private extension NavigationRoute {
-    var isScoreboard: Bool {
-        if case .scoreboard = self { return true }
-        return false
-    }
 }

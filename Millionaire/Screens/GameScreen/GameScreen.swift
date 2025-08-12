@@ -13,8 +13,8 @@ struct GameScreen: View {
     
     @State private var showCustomAlert = false
     @State private var alertMessage = ""
-    
     @State private var showAudienceHelpView = false
+    @State private var hasAppeared = false
     
     // MARK: Init
     init(viewModel: GameViewModel) {
@@ -44,10 +44,16 @@ struct GameScreen: View {
         .blur(radius: showCustomAlert || showAudienceHelpView ? 5 : 0)
         
         .onAppear {
-            viewModel.startGame()
+            // для защиты от повторных вызовов
+            if !hasAppeared {
+                hasAppeared = true
+                viewModel.startGame()
+            }
         }
         
         .onDisappear {
+            // НЕ сбрасываем hasAppeared здесь,
+            // так как GameScreen должен создаваться заново для новой игры
             showCustomAlert = false
             showAudienceHelpView = false
         }
@@ -55,7 +61,10 @@ struct GameScreen: View {
         .onChange(of: scenePhase) { newPhase in
             switch newPhase {
             case .active:
-                viewModel.resumeGame()
+                // Возобновляем только если игра была приостановлена
+                if hasAppeared {
+                    viewModel.resumeGame()
+                }
             case .inactive, .background:
                 viewModel.pauseGame()
             @unknown default:
@@ -292,20 +301,20 @@ extension GameSession {
 //            incorrectAnswers: ["Wrong A", "Wrong B", "Wrong C"]
 //        )
 //    }
-//    
+//
 //    if let session = GameSession(questions: questions) {
 //        // Используем инициализатор с lastSession
 //        let gameManager = GameManager(
 //            bestScore: 0,
 //            lastSession: session  // Передаем сессию через инициализатор
 //        )
-//        
+//
 //        let viewModel = GameViewModel(
 //            gameManager: gameManager,
 //            onNavigateToScoreboard: { _, _ in },
 //            audioService: MockAudioService()
 //        )
-//        
+//
 //        return NavigationStack {
 //            GameScreen(viewModel: viewModel)
 //        }
