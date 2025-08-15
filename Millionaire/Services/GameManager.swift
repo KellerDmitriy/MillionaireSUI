@@ -68,7 +68,7 @@ final class GameManager: ObservableObject {  // Управляет сессия�
     /// Начинает новую игру
     func startNewGame() async throws {
         let categoryToUse = (selectedCategory?.id == 0) ? nil : selectedCategory?.id
-        
+        gameState = .startGame
         // 1. Загружаем первые 5 easy
         try await createAndStoreInitialSession(for: categoryToUse)
     }

@@ -19,6 +19,7 @@ protocol ITimerService {
 }
 
 final class TimerService: ITimerService {
+    static let shared = TimerService()
     
     @Published private(set) var displayData: TimerDisplayData = TimerDisplayData(formattedTime: "00:00", type: .normal)
     @Published private(set) var progress: Float = 1.0 // 100% в начале (30 сек)
@@ -36,6 +37,8 @@ final class TimerService: ITimerService {
     var isRunning: Bool {
         !isPaused
     }
+    
+    private init(){}
     // MARK: - Public API
     func start30SecondTimer(completion: @escaping () -> Void) {
         startTimer(seconds: 30, completion: completion)

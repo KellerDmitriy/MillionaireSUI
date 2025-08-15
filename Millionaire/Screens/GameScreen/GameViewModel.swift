@@ -97,7 +97,7 @@ final class GameViewModel: ObservableObject {
         gameManager: GameManager,
         audioService: IAudioService = AudioService.shared,
         storage: IStorageService = StorageService.shared,
-        timerService: ITimerService = TimerService()
+        timerService: ITimerService = TimerService.shared
     ) {
         // инициализируем stored properties
         self.navigation = navigation
@@ -114,7 +114,6 @@ final class GameViewModel: ObservableObject {
             preconditionFailure("GameManager must have active session before creating GameViewModel")
         }
         
-       
         bindTimer()
         subscribeToSessionChanges()
     }
@@ -181,6 +180,7 @@ final class GameViewModel: ObservableObject {
     private func stopGameResources() {
         audioService.stop()
         timerService.stopTimer()
+        print("STOP TIMER")
     }
     
     // MARK: - Timer Binding
@@ -408,6 +408,7 @@ extension GameViewModel {
         print("category: \(String(describing: session.getCurrentCategory()?.name))")
         print("difficulty: \(session.currentQuestion.difficulty)")
         print("correctAnswer: \(session.currentQuestion.correctAnswer)")
+        
         timerService.start30SecondTimer { [weak self] in
             self?.onTimeExpired()
         }

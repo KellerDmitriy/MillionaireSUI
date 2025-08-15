@@ -48,6 +48,7 @@ struct GameScreen: View {
             .allowsHitTesting(viewModel.selectedAnswer == nil)
         }
         .blur(radius: showCustomAlert || showAudienceHelpView ? 5 : 0)
+        
         .onAppear {
             viewModel.setNavigation(navigation)
         }

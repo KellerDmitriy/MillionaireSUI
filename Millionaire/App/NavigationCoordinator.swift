@@ -116,6 +116,8 @@ final class NavigationCoordinator: ObservableObject {
         case .gameOver, .victoryMillionare:
             gameManager?.checkGameState(.stopGame)
             // При окончании игры - переходим к GameOverView
+            // Удаляем экран игры из стека
+            path.removeAll(where: { $0 == .game })
             // Всегда берем актуальную сессию
             guard let actualSession = gameManager?.currentSession else {
                 print("⚠️ No current session, using provided")
@@ -207,7 +209,14 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func showGameOverAfterWithdrawal(_ session: GameSession) {
-        // Показываем GameOver с режимом intermediate (забрали деньги)
+        //  Останавливаем игру
+        gameManager?.checkGameState(.stopGame)
+        
+        //  Удаляем экран игры
+        path.removeAll(where: { $0 == .game })
+        // убираем .scoreboard
+      
+        //  Показываем GameOver
         path.append(.gameOver(session, .intermediate))
     }
 }
