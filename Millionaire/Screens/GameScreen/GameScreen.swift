@@ -63,17 +63,6 @@ struct GameScreen: View {
             showAudienceHelpView = false
         }
         
-        .onChange(of: scenePhase) { newPhase in
-            switch newPhase {
-            case .active:
-                viewModel.resumeGame()
-            case .inactive, .background:
-                viewModel.pauseGame()
-            @unknown default:
-                break
-            }
-        }
-        
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .overlay(

@@ -384,12 +384,8 @@ extension GameViewModel {
                 startGame()
             case .resumeGame:
                 resumeGame()
-            case .pause:
-                break
-            case .stopGame:
-                stopGame()
             case .none:
-                break
+                stopGame()
             }
         }
     }

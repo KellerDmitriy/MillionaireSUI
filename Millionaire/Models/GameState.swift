@@ -14,7 +14,4 @@ enum GameState: Hashable, Equatable {
     case resumeGame
     /// Продолжение игры автоматически (новый вопрос после завершения предыдущего)
     case nextRound
-    /// Пауза (при уходе с экрана)
-    case pause
-    case stopGame
 }

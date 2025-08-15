@@ -118,7 +118,6 @@ final class NavigationCoordinator: ObservableObject {
         case .roundWon:
             nextRoundGame()
         case .gameOver, .victoryMillionare:
-            gameManager?.checkGameState(.stopGame)
             // При окончании игры - переходим к GameOverView
             // Удаляем экран игры из стека
             path.removeAll(where: { $0 == .game })
