@@ -8,7 +8,10 @@
 import SwiftUI
 
 struct GameScreen: View {
-    @ObservedObject var viewModel: GameViewModel
+    @StateObject var viewModel: GameViewModel
+    
+    @EnvironmentObject var navigation: NavigationCoordinator
+    
     @Environment(\.scenePhase) var scenePhase
     
     @State private var showCustomAlert = false
@@ -17,8 +20,11 @@ struct GameScreen: View {
     @State private var showAudienceHelpView = false
     
     // MARK: Init
-    init(viewModel: GameViewModel) {
-        self.viewModel = viewModel
+    init(gameManager: GameManager) {
+        self._viewModel = StateObject(wrappedValue: GameViewModel(
+            gameManager: gameManager
+        )
+        )
     }
     
     // MARK: - Body
@@ -42,10 +48,11 @@ struct GameScreen: View {
             .allowsHitTesting(viewModel.selectedAnswer == nil)
         }
         .blur(radius: showCustomAlert || showAudienceHelpView ? 5 : 0)
-
+        .onAppear {
+            viewModel.setNavigation(navigation)
+        }
         .task {
             await viewModel.handleGameStateOnAppear()
-            print("current State\(viewModel.gameState)")
         }
         
         .onDisappear {
@@ -63,7 +70,7 @@ struct GameScreen: View {
                 break
             }
         }
-
+        
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .overlay(
@@ -221,7 +228,7 @@ struct GameScreen: View {
         
         // Если выбранный ответ был неправильным, но подсказка активирована
         if selected == answer {
-
+            
             switch viewModel.answerResultState {
             case .correct:
                 return .correct
@@ -236,7 +243,7 @@ struct GameScreen: View {
            answer == viewModel.correctAnswer {
             return .correct
         }
-
+        
         return .regular
     }
     
@@ -268,11 +275,11 @@ extension GameSession {
         
         session.setScore(withScore)
         
-//        // Настраиваем подсказки
-//        let allLifelines: Set<Lifeline> = [.fiftyFifty, .audience, .secondChance]
-//        for used in allLifelines.subtracting(lifelines) {
-//            session.useLifeline(used)
-//        }
+        //        // Настраиваем подсказки
+        //        let allLifelines: Set<Lifeline> = [.fiftyFifty, .audience, .secondChance]
+        //        for used in allLifelines.subtracting(lifelines) {
+        //            session.useLifeline(used)
+        //        }
         
         return session
     }
@@ -281,19 +288,14 @@ extension GameSession {
 // Тогда Preview становится проще:
 #Preview("Game - Mid Game") {
     if let session = GameSession.makeForPreview(
-        atQuestion: 7,
+        atQuestion: 7 ,
         withScore: 10000,
         lifelines: [.audience]
     ) {
         let gameManager = GameManager(bestScore: 50000, lastSession: session)
         
         NavigationStack {
-            GameScreen(
-                viewModel: GameViewModel(
-                    gameManager: gameManager,
-                    audioService: MockAudioService()
-                )
-            )
+            GameScreen(gameManager: gameManager)
         }
     } else {
         Text("Preview failed")

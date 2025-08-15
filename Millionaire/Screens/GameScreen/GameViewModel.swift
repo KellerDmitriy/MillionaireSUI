@@ -12,12 +12,6 @@ import Combine
 // MARK: - Navigation States
 extension GameViewModel {
     
-    enum GameState: Hashable, Equatable {
-        case continuedRound
-        case pause
-        case startGame
-    }
-    
     enum ScoreboardMode: Hashable, Equatable {
         case intermediate
         case roundWon
@@ -31,10 +25,10 @@ extension GameViewModel {
 @MainActor
 final class GameViewModel: ObservableObject {
     
+    private weak var navigation: NavigationCoordinator?
     private weak var gameManager: GameManager?
     
     // MARK: - Services
-    
     private let timerService: ITimerService
     private let audioService: IAudioService
     private let storage: IStorageService
@@ -42,9 +36,6 @@ final class GameViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     private let prizeCalculator = PrizeCalculator()
-    
-    /// Обработчик перехода к скорборду
-    private let onNavigateToScoreboard: ((GameSession, ScoreboardMode) -> Void)?
     
     private var session: GameSession {
         get {
@@ -60,12 +51,7 @@ final class GameViewModel: ObservableObject {
     
     /// Массив вариантов ответа в порядке их отображения
     @Published private(set) var answers: [String] = []
-    //    {
-    //        didSet {
-    //            // Очищаем недоступные варианты при смене ответов (а значит и вопроса)
-    //            disabledAnswers = []
-    //        }
-    //    }
+
     @Published private(set) var disabledAnswers: Set<String> = []  /// Недоступные для выбора варианты ответов
     @Published var correctAnswer: String?
     @Published var duration: String = "00:00"
@@ -102,22 +88,23 @@ final class GameViewModel: ObservableObject {
     
     var lifelines: Set<Lifeline> { session.lifelines }
     
-    @Published var gameState: GameState = .startGame
+
+    @Published private(set) var isLoadingQuestions = false
     
     // MARK: Init
     init(
+        navigation: NavigationCoordinator? = nil,
         gameManager: GameManager,
-        onNavigateToScoreboard: ((GameSession, ScoreboardMode) -> Void)? = nil,
         audioService: IAudioService = AudioService.shared,
         storage: IStorageService = StorageService.shared,
         timerService: ITimerService = TimerService()
     ) {
         // инициализируем stored properties
+        self.navigation = navigation
         self.gameManager = gameManager          // сохраняем ссылку
         self.audioService = audioService
         self.storage = storage
         self.timerService = timerService
-        self.onNavigateToScoreboard = onNavigateToScoreboard
         
         // ✅ Вместо этого просто читаем текущее состояние
         if let currentSession = gameManager.currentSession {
@@ -132,8 +119,8 @@ final class GameViewModel: ObservableObject {
         subscribeToSessionChanges()
     }
     
+    // MARK: Subscribe
     private func subscribeToSessionChanges() {
-        
         gameManager?.$currentSession
             .compactMap { $0 }  // Фильтруем nil
             .removeDuplicates()
@@ -155,8 +142,7 @@ final class GameViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    @Published private(set) var isLoadingQuestions = false
-    
+    // MARK: FetchQuestions
     private func checkIfNeedMoreQuestions(session: GameSession) {
         let currentIndex = session.currentQuestionIndex
         let totalLoaded = session.questions.count
@@ -178,40 +164,6 @@ final class GameViewModel: ObservableObject {
         }
     }
     
-    // MARK: - Game State
-    func handleGameStateOnAppear() async {
-       await MainActor.run {
-            switch gameState {
-            case .startGame:
-                startGame()
-            case .pause:
-                pauseGame()
-            case .continuedRound:
-                resumeGame()
-            }
-        }
-    }
-    
-    // MARK: - Game Start
-    func startGame() {
-        // Стартуем только если нет выбранного ответа И это первый вопрос
-        guard selectedAnswer == nil else { return }
-        
-        audioService.playGameSfx()
-        
-        startNewRound()
-    }
-    
-    private func startNewRound() {
-        // Печатаем для каждого нового вопроса
-        print("category: \(String(describing: session.getCurrentCategory()?.name))")
-        print("difficulty: \(session.currentQuestion.difficulty)")
-        print("correctAnswer: \(session.currentQuestion.correctAnswer)")
-        gameState = .startGame
-        timerService.start30SecondTimer { [weak self] in
-            self?.onTimeExpired()
-        }
-    }
     
     private func onTimeExpired() {
         audioService.playAnswerLockedSfx()
@@ -321,9 +273,6 @@ final class GameViewModel: ObservableObject {
             answerResultState = .incorrect
         }
         
-        // НЕ обновляем сессию сразу!
-        // session = newSession
-        
         // Устанавливаем состояние результата для анимации
         answerResultState = answerResult == .incorrect ? .incorrect : .correct
         
@@ -371,7 +320,7 @@ final class GameViewModel: ObservableObject {
         }
         print(mode)
         // Делегируем навигацию родительскому компоненту
-        onNavigateToScoreboard?(session, mode)
+        navigation?.showScoreboard(session, mode: mode)
     }
     
     // MARK: - Help Button Actions
@@ -406,9 +355,14 @@ final class GameViewModel: ObservableObject {
         guard session.useSecondChanceLifeline() != nil else { return }
     }
     
+    // MARK: - NavigationCoordinator
+    func setNavigation(_ navigation: NavigationCoordinator) {
+        self.navigation = navigation
+    }
+    
     func routeToScoreboardWithIntermediate() {
         pauseGame()
-        onNavigateToScoreboard?(session, .intermediate)
+        navigation?.showScoreboard(session, mode: .intermediate)
     }
 }
 
@@ -421,9 +375,46 @@ private extension GameQuestion {
 extension GameViewModel {
     // MARK: - Game Control Methods
     
+    // MARK: - Game State
+    func handleGameStateOnAppear() async {
+        await MainActor.run {
+            switch gameManager?.gameState {
+            case .startGame, .nextRound:
+                startGame()
+            case .resumeGame:
+                resumeGame()
+            case .pause:
+                break
+            case .stopGame:
+                stopGame()
+            case .none:
+                break
+            }
+        }
+    }
+
+    // MARK: - Game Start
+    func startGame() {
+        // Стартуем только если нет выбранного ответа И это первый вопрос
+        guard selectedAnswer == nil else { return }
+        
+        audioService.playGameSfx()
+        
+        startNewRound()
+    }
+    
+    private func startNewRound() {
+        // Печатаем для каждого нового вопроса
+        print("category: \(String(describing: session.getCurrentCategory()?.name))")
+        print("difficulty: \(session.currentQuestion.difficulty)")
+        print("correctAnswer: \(session.currentQuestion.correctAnswer)")
+        timerService.start30SecondTimer { [weak self] in
+            self?.onTimeExpired()
+        }
+    }
+    
     /// Ставит игру на паузу (при уходе с экрана)
     func pauseGame() {
-        gameState = .pause
         timerService.pauseTimer()
         audioService.pause()
         storage.saveGameSession(session)
@@ -433,7 +424,6 @@ extension GameViewModel {
     func resumeGame() {
         // Возобновляем только если нет выбранного ответа
         guard selectedAnswer == nil else { return }
-        gameState = .continuedRound
         timerService.resumeTimer()
         audioService.resume()
     }

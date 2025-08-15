@@ -90,7 +90,7 @@ struct HomeView: View {
                 navigationCoordinator.destinationView(for: route)
             }
         }
-
+        .environmentObject(navigationCoordinator)
         .onChange(of: navigationCoordinator.path) { newPath in
             viewModel.onNavigationChange(newPath)
         }

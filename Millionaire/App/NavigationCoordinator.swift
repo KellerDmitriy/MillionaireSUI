@@ -59,14 +59,15 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func showGame() {
+        gameManager?.checkGameState(.startGame)
         lastVisitedScreen = .game
         path = [.game]
     }
     
     func continueGame() {
+        gameManager?.checkGameState(.resumeGame)
         lastVisitedScreen = .game
         path = [.game]
-        activeGameViewModel?.gameState = .continuedRound
     }
     
     func showScoreboard(_ session: GameSession, mode: GameViewModel.ScoreboardMode) {
@@ -107,12 +108,13 @@ final class NavigationCoordinator: ObservableObject {
         
         switch mode {
         case .intermediate:
-            activeGameViewModel?.gameState = .continuedRound
+            gameManager?.checkGameState(.resumeGame)
             popLast()
         case .roundWon:
-            activeGameViewModel?.gameState = .startGame
+            gameManager?.checkGameState(.nextRound)
             popLast()
         case .gameOver, .victoryMillionare:
+            gameManager?.checkGameState(.stopGame)
             // При окончании игры - переходим к GameOverView
             // Всегда берем актуальную сессию
             guard let actualSession = gameManager?.currentSession else {
@@ -127,16 +129,11 @@ final class NavigationCoordinator: ObservableObject {
     // MARK: - GameOver Actions
     
     func startNewGameFromGameOver() {
-        // 1. Удаляем старый GameViewModel, чтобы создать новый
-        activeGameViewModel = nil
-        
-        // 2. Стартуем новую игру через HomeViewModel
+        // Стартуем новую игру через HomeViewModel
         homeViewModel?.startNewGameDirect()
     }
     
     func returnToMainScreenFromGameOver() {
-        // Чистим стек и GameViewModel
-        activeGameViewModel = nil
         // Просто возвращаемся на главный экран
         popToRoot()
     }
@@ -151,8 +148,6 @@ final class NavigationCoordinator: ObservableObject {
         path = [.game]
     }
     
-    // хранение активного ViewModel
-    private var activeGameViewModel: GameViewModel?
     
     // MARK: - View Factory
     @ViewBuilder
@@ -168,8 +163,10 @@ final class NavigationCoordinator: ObservableObject {
                 CategoriesScreen(gameManager: gameManager)
             }
             
-        case .game: // session больше не используется
-            gameScreenView()
+        case .game:
+            if let gameManager {
+                GameScreen(gameManager: gameManager)
+            }
             
         case .scoreboard(let session, let mode):
             ScoreboardView(
@@ -207,49 +204,6 @@ final class NavigationCoordinator: ObservableObject {
             )
             
         }
-    }
-    
-    @ViewBuilder
-    private func gameScreenView() -> some View {
-        if let existingViewModel = activeGameViewModel {
-            GameScreen(viewModel: existingViewModel)
-        } else {
-            // Создаем ViewModel и сохраняем его
-            GameScreen(viewModel: getOrCreateGameViewModel())
-        }
-    }
-    
-    // для создания и сохранения ViewModel
-    private func getOrCreateGameViewModel() -> GameViewModel {
-        if let existing = activeGameViewModel {
-            return existing
-        }
-        
-        let viewModel = createGameViewModel()
-        activeGameViewModel = viewModel  // Присваивание вне ViewBuilder
-        return viewModel
-    }
-    
-    // MARK: - ViewModels Factory
-    private func createGameViewModel() -> GameViewModel {
-        guard let gameManager = gameManager else {
-                preconditionFailure("GameManager is required for GameViewModel")
-            }
-        
-        // Проверяем что есть активная сессия
-        guard gameManager.currentSession != nil else {
-            preconditionFailure("No active session in GameManager")
-        }
-        
-        return GameViewModel(
-            gameManager: gameManager,
-            // GameViewModel не управляет навигацией
-            // Вместо этого уведомляет родительский компонент
-            onNavigateToScoreboard: { [weak self] session, mode in
-                // Добавляем скорборд в навигацию
-                self?.showScoreboard(session, mode: mode)
-            },
-        )
     }
     
     func showGameOverAfterWithdrawal(_ session: GameSession) {
