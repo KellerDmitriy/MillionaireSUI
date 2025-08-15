@@ -20,9 +20,11 @@ struct GameScreen: View {
     @State private var showAudienceHelpView = false
     
     // MARK: Init
-    init(gameManager: GameManager) {
+    init(gameManager: GameManager, audioService: IAudioService, timerService: ITimerService) {
         self._viewModel = StateObject(wrappedValue: GameViewModel(
-            gameManager: gameManager
+            gameManager: gameManager,
+            audioService: audioService,
+            timerService: timerService
         )
         )
     }
@@ -119,6 +121,7 @@ struct GameScreen: View {
                     onBack: {
                         // Дополнительная логика перед возвратом
                         viewModel.pauseGame()
+                        navigation.popToRoot()
                     }
                 )
             }
@@ -296,7 +299,7 @@ extension GameSession {
         let gameManager = GameManager(bestScore: 50000, lastSession: session)
         
         NavigationStack {
-            GameScreen(gameManager: gameManager)
+            GameScreen(gameManager: gameManager, audioService: AudioService(), timerService: TimerService())
         }
     } else {
         Text("Preview failed")

@@ -64,6 +64,12 @@ final class NavigationCoordinator: ObservableObject {
         path = [.game]
     }
     
+    func nextRoundGame() {
+        gameManager?.checkGameState(.nextRound)
+        lastVisitedScreen = .game
+        path = [.game]
+    }
+    
     func continueGame() {
         gameManager?.checkGameState(.resumeGame)
         lastVisitedScreen = .game
@@ -78,7 +84,7 @@ final class NavigationCoordinator: ObservableObject {
         }
         print("🗺️ Navigation: showScoreboard")
         print("   Актуально из GM: \(actualSession.questions.count) вопросов, индекс: \(actualSession.currentQuestionIndex)")
-
+        path.removeAll(where: { $0 == .game })
         lastVisitedScreen = .scoreboard(actualSession, mode)
         path.append(.scoreboard(actualSession, mode))
     }
@@ -105,14 +111,12 @@ final class NavigationCoordinator: ObservableObject {
     func handleScoreboardClose(mode: GameViewModel.ScoreboardMode, session: GameSession) {
         print("🗺️ Navigation: handleScoreboardClose, mode: \(mode)")
         print("🗺️ Path before: \(path.count) элементов")
-        
+              
         switch mode {
         case .intermediate:
-            gameManager?.checkGameState(.resumeGame)
-            popLast()
+            continueGame() 
         case .roundWon:
-            gameManager?.checkGameState(.nextRound)
-            popLast()
+            nextRoundGame()
         case .gameOver, .victoryMillionare:
             gameManager?.checkGameState(.stopGame)
             // При окончании игры - переходим к GameOverView
@@ -167,27 +171,34 @@ final class NavigationCoordinator: ObservableObject {
             
         case .game:
             if let gameManager {
-                GameScreen(gameManager: gameManager)
+                GameScreen(
+                    gameManager:
+                            gameManager,
+                    audioService: gameManager.audio,
+                    timerService: gameManager.timer
+                )
             }
             
         case .scoreboard(let session, let mode):
-            ScoreboardView(
-                session: session,
-                mode: mode,
-                onAction: { [weak self] in
-                    // Логика withdrawal - забрать деньги и завершить игру
-                    self?.homeViewModel?.withdrawAndEndGame()
-                },
-                onClose: { [weak self] in
-                    //                    Логика переходов от ScoreboardView:
-                    //                    .intermediate → возврат к игре
-                    //                    .gameOver/.victory → переход к GameOverView
-                    
-                    // Возвращаемся назад - убираем скорборд из навигации
-                    self?.handleScoreboardClose(mode: mode, session: session)
-                }
-            )
-            
+            if let gameManager {
+                ScoreboardView(
+                    session: session,
+                    audioService: gameManager.audio,
+                    mode: mode,
+                    onAction: { [weak self] in
+                        // Логика withdrawal - забрать деньги и завершить игру
+                        self?.homeViewModel?.withdrawAndEndGame()
+                    },
+                    onClose: { [weak self] in
+                        //                    Логика переходов от ScoreboardView:
+                        //                    .intermediate → возврат к игре
+                        //                    .gameOver/.victory → переход к GameOverView
+                        
+                        // Возвращаемся назад - убираем скорборд из навигации
+                        self?.handleScoreboardClose(mode: mode, session: session)
+                    }
+                )
+            }
         case .gameOver(let session, let mode):
             //            Обработка действий из GameOverView:
             //            "New Game" → очистка навигации и запуск новой игры
@@ -209,13 +220,8 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func showGameOverAfterWithdrawal(_ session: GameSession) {
-        //  Останавливаем игру
-        gameManager?.checkGameState(.stopGame)
-        
         //  Удаляем экран игры
         path.removeAll(where: { $0 == .game })
-        // убираем .scoreboard
-      
         //  Показываем GameOver
         path.append(.gameOver(session, .intermediate))
     }

@@ -12,6 +12,8 @@ import Foundation
 @MainActor
 final class GameManager: ObservableObject {  // Управляет сессиями
     private let questionRepository: IQuestionRepository
+    private let timerService: ITimerService
+    private let audioService: IAudioService
     
     /// Лучший результат, если он есть
     private(set) var bestScore: Int
@@ -23,17 +25,23 @@ final class GameManager: ObservableObject {  // Управляет сессия�
     
     @Published private(set) var gameState: GameState = .startGame
     
+    var timer: ITimerService { timerService }
+    var audio: IAudioService { audioService }
+    
     func updateSession(_ session: GameSession) {
         self.currentSession = session
     }
     
     init(
         questionRepository: QuestionRepository = QuestionRepository(),
+        timerService: ITimerService = TimerService(),
+        audioService: IAudioService = AudioService(),
         bestScore: Int = 0,
         lastSession: GameSession? = nil
     ) {
         self.questionRepository = questionRepository
-        
+        self.timerService = timerService
+        self.audioService = audioService
         // TODO: Добавить чтение начальных значений из UserDefaults?
         self.bestScore = bestScore
         self.currentSession = lastSession
@@ -130,18 +138,21 @@ final class GameManager: ObservableObject {  // Управляет сессия�
     }
     
     // MARK: - Emergency Loading (вызывается из GameViewModel)
+    // MARK: - Emergency Loading (вызывается из GameViewModel)
     func loadRemainingQuestions(categoryID: Int?) async {
         guard let session = currentSession else { return }
         
         let loaded = session.questions.count
         
-        // Определяем что нужно догрузить
-        if loaded < 10 {
+        if loaded <= 6 {
             // Нужны medium вопросы
             await loadMediumQuestions(categoryID: categoryID)
-        } else if loaded < 15 {
+        } else if loaded > 6 && loaded < 15 {
             // Нужны только hard вопросы
             await loadHardQuestions(categoryID: categoryID)
+        } else {
+            // Уже 15 или больше — ничего не делаем
+            print("⚡ Все вопросы загружены или лимит достигнут")
         }
     }
     

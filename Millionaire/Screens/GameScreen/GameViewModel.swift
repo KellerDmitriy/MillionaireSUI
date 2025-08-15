@@ -95,9 +95,9 @@ final class GameViewModel: ObservableObject {
     init(
         navigation: NavigationCoordinator? = nil,
         gameManager: GameManager,
-        audioService: IAudioService = AudioService.shared,
-        storage: IStorageService = StorageService.shared,
-        timerService: ITimerService = TimerService.shared
+        audioService: IAudioService,
+        timerService: ITimerService,
+        storage: IStorageService = StorageService.shared
     ) {
         // инициализируем stored properties
         self.navigation = navigation
@@ -145,7 +145,7 @@ final class GameViewModel: ObservableObject {
     private func checkIfNeedMoreQuestions(session: GameSession) {
         let currentIndex = session.currentQuestionIndex
         let totalLoaded = session.questions.count
-        
+        print("GameViewModel: FetchQuestions")
         if totalLoaded - currentIndex <= 2 && totalLoaded < 15 {
             print("🚨 Экстренная догрузка! Вопрос: \(currentIndex + 1), Загружено: \(totalLoaded)")
             
@@ -173,6 +173,7 @@ final class GameViewModel: ObservableObject {
         newSession.setScore(checkpoint)
         newSession.finish()
         session = newSession
+        print("время вышло")
         //  Время вышло - показываем скорборд как поражение
         checkGameEnd(answerResult: .incorrect) // ответ не выбран
     }
@@ -425,6 +426,11 @@ extension GameViewModel {
     func resumeGame() {
         // Возобновляем только если нет выбранного ответа
         guard selectedAnswer == nil else { return }
+        // Переустанавливаем коллбэк, чтобы он вызывал onTimeExpired у НОВОЙ VM
+        timerService.setOnExpire { [weak self] in
+            self?.onTimeExpired()
+        }
+        
         timerService.resumeTimer()
         audioService.resume()
     }

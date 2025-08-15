@@ -9,7 +9,6 @@ import SwiftUI
 
 struct BackBarButtonView: View {
     // MARK: - Properties
-    @Environment(\.dismiss) var dismiss
     var foregroundStyle: Color = Color.white
     let onBack: (() -> Void)?
     
@@ -26,8 +25,7 @@ struct BackBarButtonView: View {
     // MARK: - Body
     var body: some View {
         Button(action: {
-            onBack?()  // Вызываем коллбек перед dismiss
-            dismiss()
+            onBack?()  // Вызываем коллбек
         }, label: {
             Image(systemName: "arrow.left")
                 .resizable()

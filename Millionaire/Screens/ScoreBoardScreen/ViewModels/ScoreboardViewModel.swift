@@ -28,7 +28,7 @@ final class ScoreboardViewModel: ObservableObject {
         }
     }
     
-    init(gameSession: GameSession, audioService: IAudioService = AudioService.shared) {
+    init(gameSession: GameSession, audioService: IAudioService) {
         self.gameSession = gameSession
         self.audioService = audioService
     }
@@ -51,7 +51,8 @@ final class ScoreboardViewModel: ObservableObject {
     func playSound(mode: GameViewModel.ScoreboardMode) {
         switch mode {
         case .intermediate:
-            audioService.pause()
+            
+          break
         case .roundWon:
             audioService.playCorrectAnswerSfx()
         case .gameOver:
@@ -59,10 +60,6 @@ final class ScoreboardViewModel: ObservableObject {
         case .victoryMillionare:
             audioService.playVictorySfx()
         }
-    }
-    
-    func takeMoney() {
-        print("take money")
     }
     
     func deinitAudioService() {

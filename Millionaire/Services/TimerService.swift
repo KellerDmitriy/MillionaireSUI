@@ -10,16 +10,14 @@ import Foundation
 
 protocol ITimerService {
     var displayPublisher: Published<TimerDisplayData>.Publisher { get }
-    var totalSeconds: Int { get }
-    var isRunning: Bool { get }
     func start30SecondTimer(completion: @escaping () -> Void)
+    func setOnExpire(_ onExpire: @escaping () -> Void)
     func pauseTimer()
     func resumeTimer()
     func stopTimer()
 }
 
 final class TimerService: ITimerService {
-    static let shared = TimerService()
     
     @Published private(set) var displayData: TimerDisplayData = TimerDisplayData(formattedTime: "00:00", type: .normal)
     @Published private(set) var progress: Float = 1.0 // 100% в начале (30 сек)
@@ -27,18 +25,12 @@ final class TimerService: ITimerService {
     
     var displayPublisher: Published<TimerDisplayData>.Publisher { $displayData }
     
-    
     private(set) var totalSeconds: Int = 0
     private var remaining: Int = 0
     private var onComplete: (() -> Void)?
-    
+    private var onExpire: (() -> Void)?
     private var cancellable: AnyCancellable?
     
-    var isRunning: Bool {
-        !isPaused
-    }
-    
-    private init(){}
     // MARK: - Public API
     func start30SecondTimer(completion: @escaping () -> Void) {
         startTimer(seconds: 30, completion: completion)
@@ -65,6 +57,10 @@ final class TimerService: ITimerService {
         isPaused = false
         startPublisher()
         print("таймер продолжает работать, осталось\(remaining)cek")
+    }
+    
+    func setOnExpire(_ onExpire: @escaping () -> Void) {
+        self.onExpire = onExpire
     }
     
     func stopTimer() {
@@ -101,6 +97,7 @@ final class TimerService: ITimerService {
                 if self.remaining <= 0 {
                     self.stopTimer()
                     self.onComplete?()
+                    self.onExpire?()
                 }
             }
     }
