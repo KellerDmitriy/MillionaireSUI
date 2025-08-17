@@ -46,6 +46,7 @@ final class ScoreboardViewModel: ObservableObject {
         return min(max(number, 1), 15)
     }
     
+    // MARK: - Init
     init(gameSession: GameSession,
          mode: GameViewModel.ScoreboardMode,
          audioService: IAudioService) {

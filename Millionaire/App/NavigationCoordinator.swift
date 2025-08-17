@@ -139,12 +139,9 @@ final class NavigationCoordinator: ObservableObject {
         case .intermediate:
             popLast()
             continueGame()
-            
         case .roundWon:
-//             popLast()
             print("   Продолжаем игру после правильного ответа...")
             nextRoundGame()
-            
         case .gameOver, .victoryMillionare:
             // При окончании игры - переходим к GameOverView
             showGameOver(actualSession, mode: mode)

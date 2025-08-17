@@ -34,7 +34,6 @@ final class GameViewModel: ObservableObject {
     
     private let prizeCalculator = PrizeCalculator()
     
-    
     private var session: GameSession {
         guard let currentSession = gameManager?.currentSession else {
             preconditionFailure("GameManager.currentSession is nil - this should never happen")
@@ -139,19 +138,29 @@ final class GameViewModel: ObservableObject {
         let currentIndex = session.currentQuestionIndex
         let totalLoaded = session.questions.count
         
-        if totalLoaded - currentIndex <= 2 && totalLoaded < 15 {
-            print("🚨 Экстренная догрузка! Вопрос: \(currentIndex + 1), Загружено: \(totalLoaded)")
+        // 🚨 Экстренная подгрузка, если осталось мало вопросов впереди
+        if totalLoaded - currentIndex <= 2 {
             
-            isLoadingQuestions = true
+            // Подгружаем medium только после 3-го вопроса
+            if currentIndex >= 3 && totalLoaded < 10 {
+                print("🚨 Экстренная подгрузка medium! Вопрос: \(currentIndex + 1), Загружено: \(totalLoaded)")
+                startEmergencyLoading(categoryID: session.selectedCategory?.id)
+            }
             
-            Task(priority: .high) {
-                await gameManager?.loadRemainingQuestions(
-                    categoryID: session.selectedCategory?.id
-                )
-                
-                await MainActor.run { [weak self] in
-                    self?.isLoadingQuestions = false
-                }
+            // Подгружаем hard только после 8-го вопроса
+            else if currentIndex >= 8 && totalLoaded < 15 {
+                print("🚨 Экстренная подгрузка hard! Вопрос: \(currentIndex + 1), Загружено: \(totalLoaded)")
+                startEmergencyLoading(categoryID: session.selectedCategory?.id)
+            }
+        }
+    }
+
+    private func startEmergencyLoading(categoryID: Int?) {
+        isLoadingQuestions = true
+        Task(priority: .high) {
+            await gameManager?.loadRemainingQuestions(categoryID: categoryID)
+            await MainActor.run { [weak self] in
+                self?.isLoadingQuestions = false
             }
         }
     }
