@@ -149,7 +149,7 @@ final class HomeViewModel: ObservableObject {
             return
         }
         
-        navigationCoordinator.showGame()
+        navigationCoordinator.continueGame()
     }
     
     // MARK: - Public Methods for External Updates

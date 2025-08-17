@@ -13,6 +13,8 @@ import Foundation
 final class GameManager: ObservableObject {  // Управляет сессиями
     private let questionRepository: IQuestionRepository
     private let storage: IStorageService
+    private let timerService: ITimerService
+    private let audioService: IAudioService
     
     /// Лучший результат, если он есть
     private(set) var bestScore: Int {
@@ -20,6 +22,8 @@ final class GameManager: ObservableObject {  // Управляет сессия�
             storage.saveBestScore(bestScore)
         }
     }
+    var timer: ITimerService { timerService }
+    var audio: IAudioService { audioService }
     
     @Published var selectedCategory: QuestionCategory? {
         didSet {
@@ -27,6 +31,7 @@ final class GameManager: ObservableObject {  // Управляет сессия�
         }
     }
     
+    @Published private(set) var gameState: GameState = .startGame
     //  текущий выбор для новой игры
     /// Модель последней игры, если она есть
     @Published private(set) var currentSession: GameSession? {
@@ -46,9 +51,13 @@ final class GameManager: ObservableObject {  // Управляет сессия�
     
     init(
         questionRepository: IQuestionRepository = QuestionRepository(),
+        timerService: ITimerService = TimerService(),
+        audioService: IAudioService = AudioService(),
         storage: IStorageService = StorageService.shared // Используем синглтон по умолчанию
     ) {
         self.questionRepository = questionRepository
+        self.timerService = timerService
+        self.audioService = audioService
         self.storage = storage
         
         // Загружаем сохраненные данные
@@ -68,10 +77,16 @@ final class GameManager: ObservableObject {  // Управляет сессия�
     // MARK: - Public Storage Methods (централизованный доступ)
     
     /// Сохраняет текущее состояние игры
-    func saveGameState() {
+    func saveGameSessionState() {
         if let session = currentSession, !session.isFinished {
             storage.saveGameSession(session)
         }
+    }
+    
+    /// Изменяет совтояние игры
+    func checkGameState(_ state: GameState) {
+        print("CurrentState: \(state)")
+        return gameState = state
     }
     
     /// Очищает сохраненную сессию
@@ -136,7 +151,7 @@ final class GameManager: ObservableObject {  // Управляет сессия�
     /// Начинает новую игру
     func startNewGame() async throws {
         let categoryToUse = (selectedCategory?.id == 0) ? nil : selectedCategory?.id
-        
+        gameState = .startGame
         // 1. Загружаем первые 5 easy
         try await createAndStoreInitialSession(for: categoryToUse)
     }

@@ -8,17 +8,24 @@
 import SwiftUI
 
 struct GameScreen: View {
-    @ObservedObject var viewModel: GameViewModel
+    @StateObject var viewModel: GameViewModel
+    
     @Environment(\.scenePhase) var scenePhase
+    @EnvironmentObject var navigation: NavigationCoordinator
     
     @State private var showCustomAlert = false
     @State private var alertMessage = ""
     @State private var showAudienceHelpView = false
-    @State private var hasAppeared = false
+ 
     
     // MARK: Init
-    init(viewModel: GameViewModel) {
-        self.viewModel = viewModel
+    init(gameManager: GameManager, audioService: IAudioService, timerService: ITimerService) {
+        self._viewModel = StateObject(wrappedValue: GameViewModel(
+            gameManager: gameManager,
+            audioService: audioService,
+            timerService: timerService
+        )
+        )
     }
     
     // MARK: - Body
@@ -44,11 +51,10 @@ struct GameScreen: View {
         .blur(radius: showCustomAlert || showAudienceHelpView ? 5 : 0)
         
         .onAppear {
-            // для защиты от повторных вызовов
-            if !hasAppeared {
-                hasAppeared = true
-                viewModel.startGame()
-            }
+            viewModel.setNavigation(navigation)
+        }
+        .task {
+            await viewModel.handleGameStateOnAppear()
         }
         
         .onDisappear {
@@ -58,19 +64,19 @@ struct GameScreen: View {
             showAudienceHelpView = false
         }
         
-        .onChange(of: scenePhase) { newPhase in
-            switch newPhase {
-            case .active:
-                // Возобновляем только если игра была приостановлена
-                if hasAppeared {
-                    viewModel.resumeGame()
-                }
-            case .inactive, .background:
-                viewModel.pauseGame()
-            @unknown default:
-                break
-            }
-        }
+//        .onChange(of: scenePhase) { newPhase in
+//            switch newPhase {
+//            case .active:
+//                // Возобновляем только если игра была приостановлена
+//                if hasAppeared {
+//                    viewModel.resumeGame()
+//                }
+//            case .inactive, .background:
+//                viewModel.pauseGame()
+//            @unknown default:
+//                break
+//            }
+//        }
         
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
@@ -119,6 +125,7 @@ struct GameScreen: View {
                     onBack: {
                         // Дополнительная логика перед возвратом
                         viewModel.pauseGame()
+                        navigation.popToRoot()
                     }
                 )
             }
@@ -129,7 +136,7 @@ struct GameScreen: View {
             
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {
-                    viewModel.testScoreboard()
+                    viewModel.routeToScoreboardWithIntermediate()
                 }, label: {
                     Image(ImageResource.iconLevels)
                 })

@@ -45,10 +45,15 @@ struct ScoreboardView: View {
     }
     
     init(session: GameSession,
+         audioService: IAudioService,
          mode: GameViewModel.ScoreboardMode = .intermediate,
          onAction: @escaping () -> Void,
          onClose: @escaping () -> Void) {
-        self.viewModel = ScoreboardViewModel(gameSession: session, mode: mode)
+        self.viewModel = ScoreboardViewModel(
+            gameSession: session,
+            mode: mode,
+            audioService: audioService
+        )
         self.mode = mode
         self.onAction = onAction
         self.onClose = onClose
@@ -214,7 +219,7 @@ private extension ScoreboardView {
                 )
             } else if mode == .intermediate {
                 BackBarButtonView(onBack: {
-                    viewModel.deinitAudioService()
+                    onClose()
                 })
             }
         }
@@ -238,6 +243,7 @@ private extension ScoreboardView {
     
     return ScoreboardView(
         session: session,
+        audioService: AudioService(),
         mode: .intermediate,
         onAction: { print("Withdrawal action") },
         onClose: { print("Close action") }
@@ -260,6 +266,7 @@ private extension ScoreboardView {
     
     return ScoreboardView(
         session: session,
+        audioService: AudioService(),
         mode: .gameOver,
         onAction: {
             print("No action in game over")
@@ -289,6 +296,7 @@ private extension ScoreboardView {
         NavigationView {
             ScoreboardView(
                 session: session,
+                audioService: AudioService(),
                 mode: .roundWon,
                 onAction: {
                     print("No action in game over")

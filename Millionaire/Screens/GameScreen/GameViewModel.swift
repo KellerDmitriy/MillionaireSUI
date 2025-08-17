@@ -22,7 +22,7 @@ extension GameViewModel {
 // локальное UI состояние + управление сервисами
 @MainActor
 final class GameViewModel: ObservableObject {
-    
+    private weak var navigation: NavigationCoordinator?
     private weak var gameManager: GameManager?
     
     // MARK: - Services
@@ -30,16 +30,10 @@ final class GameViewModel: ObservableObject {
     private let timerService: ITimerService
     private let audioService: IAudioService
     
-    // Флаг для отслеживания первого запуска
-    private var isGameStarted = false
-    private var isGameActive = false
-    
     private var cancellables = Set<AnyCancellable>()
     
     private let prizeCalculator = PrizeCalculator()
     
-    /// Обработчик перехода к скорборду
-    private let onNavigateToScoreboard: ((GameSession, ScoreboardMode) -> Void)?
     
     private var session: GameSession {
         guard let currentSession = gameManager?.currentSession else {
@@ -66,7 +60,6 @@ final class GameViewModel: ObservableObject {
     
     // Отменять задачу при деинициализации
     deinit {
-        timerService.stopTimer()
         answerProcessingTask?.cancel()
         
         // Когда GameViewModel уничтожается, все его свойства тоже
@@ -87,20 +80,21 @@ final class GameViewModel: ObservableObject {
     }
     
     var lifelines: Set<Lifeline> { session.lifelines }
+    @Published private(set) var isLoadingQuestions = false
     
     // MARK: Init
     init(
+        navigation: NavigationCoordinator? = nil,
         gameManager: GameManager,
-        onNavigateToScoreboard: ((GameSession, ScoreboardMode) -> Void)? = nil,
-        audioService: IAudioService = AudioService.shared,
-        timerService: ITimerService = TimerService()
+        audioService: IAudioService,
+        timerService: ITimerService
     ) {
         // инициализируем stored properties
+        self.navigation = navigation
         self.gameManager = gameManager          // сохраняем ссылку
         self.audioService = audioService
         self.timerService = timerService
-        self.onNavigateToScoreboard = onNavigateToScoreboard
-        
+    
         // читаем текущее состояние
         if let currentSession = gameManager.currentSession {
             self.answers = currentSession.currentQuestion.allAnswers.shuffled()
@@ -140,7 +134,6 @@ final class GameViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    @Published private(set) var isLoadingQuestions = false
     
     private func checkIfNeedMoreQuestions(session: GameSession) {
         let currentIndex = session.currentQuestionIndex
@@ -163,19 +156,26 @@ final class GameViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Game State
+    func handleGameStateOnAppear() async {
+        await MainActor.run {
+            switch gameManager?.gameState {
+            case .startGame:
+                startGame()
+            case .nextRound:
+                continueAfterIncorrectWithSecondChance()
+            case .resumeGame:
+                resumeGame()
+            case .none:
+                stopGame()
+            }
+        }
+    }
     // MARK: - Game Start
     func startGame() {
         print(" ***** startGame() called")
-        print("   isGameStarted: \(isGameStarted)")
-        print("   isGameActive: \(isGameActive)")
         print("   session.isFinished: \(session.isFinished)")
         print("   selectedAnswer: \(selectedAnswer ?? "nil")")
-        
-        // Защита от повторного запуска
-        guard !isGameStarted else {
-            print("   ⚠️ Game already started, skipping")
-            return
-        }
         
         // Защита от запуска завершенной игры
         guard !session.isFinished else {
@@ -189,12 +189,6 @@ final class GameViewModel: ObservableObject {
             return
         }
         
-        print("   ✅ Starting game for the first time")
-        isGameStarted = true
-        isGameActive = true
-        
-        audioService.playGameSfx()
-        
         startNewRound()
     }
     
@@ -202,69 +196,29 @@ final class GameViewModel: ObservableObject {
         print(" Starting new round")
         
         // Дополнительная проверка перед запуском раунда
-        guard isGameActive && !session.isFinished else {
+        guard !session.isFinished else {
             print("   ⚠️ Cannot start round - game not active or finished")
             return
         }
-        
+
         // Печатаем для каждого нового вопроса
         print("   Question #\(session.currentQuestionIndex + 1)")
         print("   Category: \(session.getCurrentCategory()?.name ?? "nil")")
         print("   Difficulty: \(session.currentQuestion.difficulty)")
         print("   Correct answer: \(session.currentQuestion.correctAnswer)")
         
+        
+        audioService.playGameSfx()
         timerService.start30SecondTimer { [weak self] in
             self?.onTimeExpired()
         }
     }
     
     // MARK: - Continue Game
-    
-    // Метод для продолжения после Scoreboard
-    func continueAfterScoreboard() {
-        print("🎮 Продолжаем игру после Scoreboard")
-        
-        // Проверяем состояние игры
-        guard let session = gameManager?.currentSession else {
-            print("   ⚠️ No session")
-            return
-        }
-        
-        guard !session.isFinished else {
-            print("   ⚠️ Game is finished, cannot continue")
-            return
-        }
-        
-        guard isGameStarted else {
-            print("   ⚠️ Game not started")
-            return
-        }
-        
-        print("📍 Переход к следующему вопросу...")
-        gameManager?.moveToNextQuestion()
-        
-        // Очищаем UI состояние для нового вопроса
-        selectedAnswer = nil
-        answerResultState = nil
-        correctAnswer = nil
-        disabledAnswers = []
-        audienceVotes = nil
-        
-        // Активируем игру и запускаем новый раунд
-        isGameActive = true
-        startNewRound()
-    }
-    
     // при возврате со Scoreboard с правом на ошибку
     func continueAfterIncorrectWithSecondChance() {
         if !session.isFinished {
             gameManager?.moveToNextQuestion()
-            
-            // Очистка UI
-            selectedAnswer = nil
-            answerResultState = nil
-            correctAnswer = nil
-            disabledAnswers = []
             
             startNewRound()
         }
@@ -291,11 +245,6 @@ final class GameViewModel: ObservableObject {
         //  Время вышло - показываем скорборд как поражение
         checkGameEnd(answerResult: .incorrect) // ответ не выбран
     }
-    
-    //    private func stopGameResources() {
-    //        audioService.stop()
-    //        timerService.stopTimer()
-    //    }
     
     // MARK: - Timer Binding
     private func bindTimer() {
@@ -387,8 +336,6 @@ final class GameViewModel: ObservableObject {
         
         if session.isFinished {
             // Игра окончена - деактивируем
-            isGameActive = false
-            
             if session.currentQuestionIndex == 14 {
                 print(" ПОБЕДА! Выигран миллион!")
                 mode = .victoryMillionare
@@ -406,7 +353,7 @@ final class GameViewModel: ObservableObject {
         }
         print(mode)
         // Делегируем навигацию родительскому компоненту
-        onNavigateToScoreboard?(session, mode)
+        navigation?.showScoreboard(session, mode: mode)
     }
     
     // MARK: - Help Button Actions
@@ -436,9 +383,14 @@ final class GameViewModel: ObservableObject {
         guard gameManager?.useSecondChanceLifeline() != nil else { return }
     }
     
-    func testScoreboard() {
+    // MARK: - NavigationCoordinator
+    func setNavigation(_ navigation: NavigationCoordinator) {
+        self.navigation = navigation
+    }
+    
+    func routeToScoreboardWithIntermediate() {
         pauseGame()
-        onNavigateToScoreboard?(session, .intermediate)
+        navigation?.showScoreboard(session, mode: .intermediate)
     }
 }
 
@@ -454,13 +406,12 @@ extension GameViewModel {
     /// Ставит игру на паузу (при уходе с экрана)
     func pauseGame() {
         print("⏸️ GameViewModel: Pausing game")
-        isGameActive = false
         timerService.pauseTimer()
         audioService.pause()
         
         // Сохраняем состояние
         if let session = gameManager?.currentSession, !session.isFinished {
-            gameManager?.saveGameState()
+            gameManager?.saveGameSessionState()
         }
     }
     
@@ -470,13 +421,14 @@ extension GameViewModel {
         
         // Возобновляем только если нет выбранного ответа и игра не завершена
         guard !session.isFinished,
-              selectedAnswer == nil,
-              isGameStarted else {
+              selectedAnswer == nil else {
             print("⚠️ Cannot resume - game state invalid")
             return
         }
-        
-        isGameActive = true
+        // Переустанавливаем коллбэк, чтобы он вызывал onTimeExpired у НОВОЙ VM
+        timerService.setOnExpire { [weak self] in
+            self?.onTimeExpired()
+        }
         timerService.resumeTimer()
         audioService.resume()
     }
@@ -484,8 +436,6 @@ extension GameViewModel {
     // Полная остановка игры (при завершении)
     func stopGame() {
         print("🛑 GameViewModel: Stopping game completely")
-        isGameActive = false
-        isGameStarted = false
         
         timerService.stopTimer()
         audioService.stop()
