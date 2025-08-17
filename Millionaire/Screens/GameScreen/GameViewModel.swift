@@ -160,8 +160,10 @@ final class GameViewModel: ObservableObject {
     func handleGameStateOnAppear() async {
         await MainActor.run {
             switch gameManager?.gameState {
-            case .startGame, .nextRound:
+            case .startGame:
                 startGame()
+            case .nextRound:
+                continueAfterIncorrectWithSecondChance()
             case .resumeGame:
                 resumeGame()
             case .none:
@@ -187,8 +189,6 @@ final class GameViewModel: ObservableObject {
             return
         }
         
-        audioService.playGameSfx()
-        
         startNewRound()
     }
     
@@ -200,30 +200,25 @@ final class GameViewModel: ObservableObject {
             print("   ⚠️ Cannot start round - game not active or finished")
             return
         }
-        
+
         // Печатаем для каждого нового вопроса
         print("   Question #\(session.currentQuestionIndex + 1)")
         print("   Category: \(session.getCurrentCategory()?.name ?? "nil")")
         print("   Difficulty: \(session.currentQuestion.difficulty)")
         print("   Correct answer: \(session.currentQuestion.correctAnswer)")
         
+        
+        audioService.playGameSfx()
         timerService.start30SecondTimer { [weak self] in
             self?.onTimeExpired()
         }
     }
     
     // MARK: - Continue Game
-    
     // при возврате со Scoreboard с правом на ошибку
     func continueAfterIncorrectWithSecondChance() {
         if !session.isFinished {
             gameManager?.moveToNextQuestion()
-            
-            // Очистка UI
-            selectedAnswer = nil
-            answerResultState = nil
-            correctAnswer = nil
-            disabledAnswers = []
             
             startNewRound()
         }
