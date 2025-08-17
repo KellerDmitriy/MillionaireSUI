@@ -217,13 +217,15 @@ final class GameManager: ObservableObject {  // Управляет сессия�
         guard let session = currentSession else { return }
         
         let loaded = session.questions.count
+        let currentIndex = session.currentQuestionIndex
         
-        // Определяем что нужно догрузить
-        if loaded < 10 {
-            // Нужны medium вопросы
+        // 🚩 Грузим medium только после 3-го вопроса
+        if currentIndex >= 3 && loaded < 10 {
             await loadMediumQuestions(categoryID: categoryID)
-        } else if loaded < 15 {
-            // Нужны только hard вопросы
+        }
+        
+        // 🚩 Грузим hard только после 8-го вопроса
+        else if currentIndex >= 8 && loaded < 15 {
             await loadHardQuestions(categoryID: categoryID)
         }
     }
