@@ -90,7 +90,7 @@ struct HomeView: View {
                 navigationCoordinator.destinationView(for: route)
             }
         }
-        
+        .environmentObject(navigationCoordinator)
         .onChange(of: navigationCoordinator.path) { newPath in
             viewModel.onNavigationChange(newPath)
         }
@@ -215,13 +215,6 @@ struct HomeView: View {
     )
 }
 
-#Preview("Game Screen") {
-    GameScreen(
-        viewModel: GameViewModel(
-            gameManager: GameManager.makeForPreview(withActiveSession: true)
-        )
-    )
-}
 
 private extension GameSession {
     /// Создает тестовую сессию для использования в превью

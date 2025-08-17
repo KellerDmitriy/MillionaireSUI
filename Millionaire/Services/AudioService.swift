@@ -19,7 +19,6 @@ protocol IAudioService {
 }
 
 final class AudioService: IAudioService {
-    static let shared = AudioService()
     
     enum ResourceSfx: String {
         case gameSfx
@@ -31,7 +30,7 @@ final class AudioService: IAudioService {
     
     private var player: AVAudioPlayer?
     
-   private init() {
+   init() {
         // Настройка аудио сессии для игры
         configureAudioSession()
     }

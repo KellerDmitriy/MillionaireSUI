@@ -38,25 +38,13 @@ final class NavigationCoordinator: ObservableObject {
     // Dependencies
     private weak var gameManager: GameManager?
     private weak var homeViewModel: HomeViewModel?
-    
     // Флаг для отслеживания withdrawal
     private var isWithdrawalInProgress = false
-    
-    // хранение активного ViewModel
-    private var activeGameViewModel: GameViewModel?
     
     // MARK: - Setup
     func setup(gameManager: GameManager, homeViewModel: HomeViewModel) {
         self.gameManager = gameManager
         self.homeViewModel = homeViewModel
-    }
-    
-    // MARK: - Game ViewModel Management
-    
-    private func cleanupGameViewModel() {
-        print("🧹 Cleaning up GameViewModel")
-        activeGameViewModel?.stopGame()  // Останавливаем таймер и аудио
-        activeGameViewModel = nil
     }
     
     // MARK: - Navigation Methods
@@ -71,7 +59,19 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func showGame() {
-        activeGameViewModel = nil
+        gameManager?.checkGameState(.startGame)
+        lastVisitedScreen = .game
+        path = [.game]
+    }
+    
+    func nextRoundGame() {
+        gameManager?.checkGameState(.nextRound)
+        lastVisitedScreen = .game
+        path = [.game]
+    }
+    
+    func continueGame() {
+        gameManager?.checkGameState(.resumeGame)
         lastVisitedScreen = .game
         path = [.game]
     }
@@ -84,9 +84,7 @@ final class NavigationCoordinator: ObservableObject {
         }
         print("🗺️ Navigation: showScoreboard")
         
-        // При показе scoreboard приостанавливаем игру
-        activeGameViewModel?.pauseGame()
-        
+        path.removeAll(where: { $0 == .game })
         lastVisitedScreen = .scoreboard(actualSession, mode)
         path.append(.scoreboard(actualSession, mode))
     }
@@ -98,9 +96,6 @@ final class NavigationCoordinator: ObservableObject {
         }
         
         print("🎮 Showing GameOver, cleaning up game resources")
-        
-        // Останавливаем игровые ресурсы перед переходом
-        cleanupGameViewModel()
         
         // Удаляем ScoreboardView из стека если она там есть
         path.removeAll { route in
@@ -114,7 +109,6 @@ final class NavigationCoordinator: ObservableObject {
     }
     
     func popToRoot() {
-        cleanupGameViewModel()  // Очищаем при возврате на главный
         path.removeAll()
         isWithdrawalInProgress = false
     }
@@ -144,12 +138,12 @@ final class NavigationCoordinator: ObservableObject {
         switch mode {
         case .intermediate:
             popLast()
-            activeGameViewModel?.resumeGame()  // Возобновляем игру
+            continueGame()
             
         case .roundWon:
-            popLast()
+//             popLast()
             print("   Продолжаем игру после правильного ответа...")
-            activeGameViewModel?.continueAfterScoreboard()
+            nextRoundGame()
             
         case .gameOver, .victoryMillionare:
             // При окончании игры - переходим к GameOverView
@@ -162,10 +156,6 @@ final class NavigationCoordinator: ObservableObject {
     func handleWithdrawal() {
         print("💰 Withdrawal initiated")
         isWithdrawalInProgress = true
-        
-        // Останавливаем игровые ресурсы сразу
-        activeGameViewModel?.pauseGame() // Сразу останавливаем таймер
-        
         // Завершаем игру через HomeViewModel
         homeViewModel?.withdrawAndEndGame()
     }
@@ -173,9 +163,6 @@ final class NavigationCoordinator: ObservableObject {
     func showGameOverAfterWithdrawal(_ session: GameSession) {
         print("💰 Showing GameOver after withdrawal")
         isWithdrawalInProgress = true
-        
-        // Останавливаем игру полностью
-        cleanupGameViewModel()
         
         // Убираем scoreboard из стека и показываем GameOver
         path.removeAll { route in
@@ -190,15 +177,11 @@ final class NavigationCoordinator: ObservableObject {
     // MARK: - GameOver Actions
     
     func startNewGameFromGameOver() {
-        // 1. Удаляем старый GameViewModel, чтобы создать новый
-        cleanupGameViewModel()
-        
-        // 2. Стартуем новую игру через HomeViewModel
+        //  Стартуем новую игру через HomeViewModel
         homeViewModel?.startNewGameDirect()
     }
     
     func returnToMainScreenFromGameOver() {
-        cleanupGameViewModel()
         // Просто возвращаемся на главный экран
         popToRoot()
     }
@@ -210,7 +193,6 @@ final class NavigationCoordinator: ObservableObject {
     
     /// Прямая замена на игру (используется после прямой загрузки)
     func showGameDirect() {
-        cleanupGameViewModel()
         path = [.game]
     }
     
@@ -229,26 +211,35 @@ final class NavigationCoordinator: ObservableObject {
             }
             
         case .game: // session больше не используется
-            gameScreenView()
+            if let gameManager {
+                GameScreen(
+                    gameManager:
+                            gameManager,
+                    audioService: gameManager.audio,
+                    timerService: gameManager.timer
+                )
+            }
             
         case .scoreboard(let session, let mode):
-            ScoreboardView(
-                session: session,
-                mode: mode,
-                onAction: { [weak self] in
-                    // Логика withdrawal - забрать деньги и завершить игру
-                    self?.handleWithdrawal()
-                },
-                onClose: { [weak self] in
-                    //                    Логика переходов от ScoreboardView:
-                    //                    .intermediate → возврат к игре
-                    //                    .gameOver/.victory → переход к GameOverView
-                    
-                    // Возвращаемся назад - убираем скорборд из навигации
-                    self?.handleScoreboardClose(mode: mode, session: session)
-                }
-            )
-            
+            if let gameManager {
+                ScoreboardView(
+                    session: session,
+                    audioService: gameManager.audio,
+                    mode: mode,
+                    onAction: { [weak self] in
+                        // Логика withdrawal - забрать деньги и завершить игру
+                        self?.handleWithdrawal()
+                    },
+                    onClose: { [weak self] in
+                        //                    Логика переходов от ScoreboardView:
+                        //                    .intermediate → возврат к игре
+                        //                    .gameOver/.victory → переход к GameOverView
+                        
+                        // Возвращаемся назад - убираем скорборд из навигации
+                        self?.handleScoreboardClose(mode: mode, session: session)
+                    }
+                )
+            }
         case .gameOver(let session, let mode):
             //            Обработка действий из GameOverView:
             //            "New Game" → очистка навигации и запуск новой игры
@@ -268,48 +259,4 @@ final class NavigationCoordinator: ObservableObject {
             
         }
     }
-    
-    @ViewBuilder
-    private func gameScreenView() -> some View {
-        if let existingViewModel = activeGameViewModel {
-            GameScreen(viewModel: existingViewModel)
-        } else {
-            // Создаем ViewModel и сохраняем его
-            GameScreen(viewModel: getOrCreateGameViewModel())
-        }
-    }
-    
-    // для создания и сохранения ViewModel
-    private func getOrCreateGameViewModel() -> GameViewModel {
-        if let existing = activeGameViewModel {
-            return existing
-        }
-        
-        let viewModel = createGameViewModel()
-        activeGameViewModel = viewModel  // Присваивание вне ViewBuilder
-        return viewModel
-    }
-    
-    // MARK: - ViewModels Factory
-    private func createGameViewModel() -> GameViewModel {
-        guard let gameManager = gameManager else {
-            preconditionFailure("GameManager is required for GameViewModel")
-        }
-        
-        // Проверяем что есть активная сессия
-        guard gameManager.currentSession != nil else {
-            preconditionFailure("No active session in GameManager")
-        }
-        
-        return GameViewModel(
-            gameManager: gameManager,
-            // GameViewModel не управляет навигацией
-            // Вместо этого уведомляет родительский компонент
-            onNavigateToScoreboard: { [weak self] session, mode in
-                // Добавляем скорборд в навигацию
-                self?.showScoreboard(session, mode: mode)
-            },
-        )
-    }
-    
 }
