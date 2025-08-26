@@ -13,6 +13,8 @@ protocol IAudioService {
     func playCorrectAnswerSfx()
     func playAnswerLockedSfx()
     func playVictorySfx()
+    func currentState() -> AudioState
+    func restoreState(_ state: AudioState) 
     func stop()
     func pause()
     func resume()
@@ -20,7 +22,7 @@ protocol IAudioService {
 
 final class AudioService: IAudioService {
     
-    enum ResourceSfx: String {
+    enum ResourceSfx: String, Codable {
         case gameSfx
         case wrongAnswerSfx
         case correctAnswerSfx
@@ -77,6 +79,7 @@ final class AudioService: IAudioService {
     }
 
     // MARK: - Public Methods
+    
     func playGameSfx() {
         play(resource: .gameSfx)
     }
@@ -111,8 +114,35 @@ final class AudioService: IAudioService {
         player = nil
     }
 }
+// MARK: - Public Methods для работы с сохранением и возобновлением игры с актуальным музсопровождением
+extension AudioService {
+    func currentState() -> AudioState {
+        return AudioState(
+            resource: (player?.url?.deletingPathExtension().lastPathComponent),
+            currentTime: player?.currentTime ?? 0,
+            isPlaying: player?.isPlaying ?? false
+        )
+    }
+    
+    func restoreState(_ state: AudioState) {
+        guard let resourceName = state.resource,
+              let resource = ResourceSfx(rawValue: resourceName) else { return }
+        
+        play(resource: resource)  
+        player?.currentTime = state.currentTime
+        if !state.isPlaying {
+            player?.pause()
+        }
+    }
+}
 
 class MockAudioService: IAudioService {
+    func restoreState(_ state: AudioState) { print("🔊 Resumed Audio State")}
+    
+    func currentState() -> AudioState {
+        AudioState(resource: "gameSfx", currentTime: 0.24, isPlaying: true)
+    }
+    
     func playGameSfx() { print("🔊 Game music") }
     func playAnswerLockedSfx() { print("🔊 Answer locked") }
     func playCorrectAnswerSfx() { print("🔊 Correct!") }

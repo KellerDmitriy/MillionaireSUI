@@ -7,6 +7,8 @@
 import SwiftUI
 
 struct CategoriesScreen: View {
+    @EnvironmentObject var navigation: NavigationCoordinator
+    
     @StateObject var viewModel: CategoriesViewModel
     @State private var showAlert = false
     
@@ -53,7 +55,9 @@ struct CategoriesScreen: View {
         .navigationBarBackButtonHidden()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                BackBarButtonView(onBack: {})}
+                BackBarButtonView(onBack: {
+                    navigation.popToRoot()
+                })}
         }
         // MARK: Subscriptions
         // Show alert when errorMessage changes
