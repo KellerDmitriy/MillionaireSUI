@@ -109,13 +109,13 @@ struct ScoreboardView: View {
         viewModel.playSound(mode: mode)
         
         if mode == .gameOver && viewModel.currentPrize < Drawing.lowPrizeThreshold {
-            try? await Task.sleep(for: .seconds(1))
+            try? await Task.sleep(for: .seconds(4))
             withAnimation {
                 showGameOverZeroAlert = true
             }
         }
         
-        try? await Task.sleep(for: .seconds(4))
+        try? await Task.sleep(for: .seconds(5))
         if !showGameOverZeroAlert && !showWithdrawalAlert && mode != .intermediate {
             viewModel.deinitAudioService()
             onClose()
