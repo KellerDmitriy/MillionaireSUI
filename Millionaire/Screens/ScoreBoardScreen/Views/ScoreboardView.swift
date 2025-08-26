@@ -179,6 +179,7 @@ private extension ScoreboardView {
                     }
                 }
             )
+            .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
             .zIndex(2)
         }
     }

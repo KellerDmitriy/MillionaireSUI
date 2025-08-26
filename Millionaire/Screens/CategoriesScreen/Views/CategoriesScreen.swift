@@ -46,8 +46,7 @@ struct CategoriesScreen: View {
                     },
                     showSecondButton: false
                 )
-                .frame(width: 300, height: 400)
-                .cornerRadius(20)
+
                 .zIndex(2)
             }
         }
@@ -118,8 +117,7 @@ struct CategoriesScreen: View {
                 },
                 showSecondButton: false
             )
-            .frame(width: 300, height: 400)
-            .cornerRadius(20)
+
             .zIndex(2)
         }
     }
