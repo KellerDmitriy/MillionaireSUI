@@ -41,7 +41,7 @@ struct ScoreboardView: View {
         
         // Toolbar icons
         static let withdrawalIconName = "IconWithdrawal"
-        static let withdrawalIconSize: CGFloat = 44
+        static let withdrawalIconSize: CGFloat = 64
     }
     
     init(session: GameSession,
@@ -175,6 +175,7 @@ private extension ScoreboardView {
                         showWithdrawalAlert = false
                         viewModel.deinitAudioService()
                         onAction()
+                        onClose()
                     }
                 }
             )

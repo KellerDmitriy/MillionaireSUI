@@ -157,19 +157,6 @@ final class NavigationCoordinator: ObservableObject {
         homeViewModel?.withdrawAndEndGame()
     }
     
-    func showGameOverAfterWithdrawal(_ session: GameSession) {
-        print("💰 Showing GameOver after withdrawal")
-        isWithdrawalInProgress = true
-        
-        // Убираем scoreboard из стека и показываем GameOver
-        path.removeAll { route in
-            if case .scoreboard = route { return true }
-            return false
-        }
-        
-        // Показываем GameOver с режимом intermediate (забрали деньги)
-        path.append(.gameOver(session, .intermediate))
-    }
     
     // MARK: - GameOver Actions
     

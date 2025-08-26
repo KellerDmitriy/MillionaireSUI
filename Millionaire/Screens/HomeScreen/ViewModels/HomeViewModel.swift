@@ -199,6 +199,7 @@ extension HomeViewModel {
             
             // НЕ вызываем навигацию здесь!
             // Пусть NavigationCoordinator сам управляет переходом
+            
         }
     }
 }

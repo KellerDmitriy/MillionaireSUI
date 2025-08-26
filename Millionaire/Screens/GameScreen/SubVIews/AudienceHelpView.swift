@@ -22,38 +22,38 @@ struct AudienceHelpView: View {
     }
     
     var body: some View {
-        VStack(spacing: 10) {
-            Text("The audience has voted!")
-                .millionaireCategoryTitleStyle()
-            Spacer()
-            HStack(alignment: .bottom, spacing: 20) {
-                ForEach(votesPerAnswer.indices, id: \.self) { index in
-                    BarView(
-                        letter: letters[index].rawValue,
-                        percentage: votesPerAnswer[index],
-                        index: index,
-                        animated: animateGraphs,
-                        isMax: index == maxAnswerIndex
-                    )
+        ZStack {
+            AnimatedGradientBackgroundView()
+                .cornerRadius(30)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 30)
+                        .stroke(Color.white, lineWidth: 3)
+                )
+            VStack(spacing: 10) {
+                Text("The audience has voted!")
+                    .millionaireCategoryTitleStyle()
+                Spacer()
+                HStack(alignment: .bottom, spacing: 20) {
+                    ForEach(votesPerAnswer.indices, id: \.self) { index in
+                        BarView(
+                            letter: letters[index].rawValue,
+                            percentage: votesPerAnswer[index],
+                            index: index,
+                            animated: animateGraphs,
+                            isMax: index == maxAnswerIndex
+                        )
+                    }
                 }
+                .padding()
+                
+                gameButton(title: "Ok", variant: .primary) {
+                    action()
+                }
+                .frame(height: 34)
+                .padding()
             }
-            .padding(.horizontal)
-            .padding(.bottom, 8)
-            
-            gameButton(title: "Ok", variant: .primary) {
-                action()
-            }
-            .frame(height: 34)
             .padding()
         }
-        .padding()
-        .background(Image(.background))
-        .cornerRadius(30)
-        .overlay(
-            RoundedRectangle(cornerRadius: 30)
-                .stroke(Color.white, lineWidth: 3)
-        )
-        .basicShadow()
         .onAppear {
             animateGraphs = true
         }
@@ -89,7 +89,7 @@ private struct BarView: View {
                 )
                 .animation(
                     .spring(duration: 0.7, bounce: 0.3)
-                        .delay(0.02 * Double(index)),
+                    .delay(0.02 * Double(index)),
                     value: animated
                 )
             
