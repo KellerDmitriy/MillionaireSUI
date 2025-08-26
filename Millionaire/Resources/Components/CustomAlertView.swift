@@ -14,11 +14,7 @@ struct CustomAlertView: View {
 
     var body: some View {
         ZStack {
-            Image(.background)
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
+            AnimatedGradientBackgroundView()
                 .cornerRadius(30)
                 .overlay(
                     RoundedRectangle(cornerRadius: 30)
