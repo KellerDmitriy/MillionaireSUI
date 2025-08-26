@@ -37,7 +37,8 @@ final class GameManager: ObservableObject {  // Управляет сессия�
     @Published private(set) var currentSession: GameSession? {
         didSet {
             // Автосохранение при изменении
-            if let session = currentSession, !session.isFinished {
+            if let session = currentSession, !session.isFinished, timer.remainingSeconds != 0 {
+                
                 saveGameRuntimeState()
                 
             } else if currentSession?.isFinished == true {
