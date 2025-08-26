@@ -8,17 +8,20 @@
 // MARK: - Mock Storage for Testing
 #if DEBUG
 class MockStorageService: IStorageService {
-    private var sessionData: GameSession?
+
+    
+    private var sessionData: GameRuntimeState?
+    
     private var bestScore: Int = 0
     private var statistics = GameStatistics()
     private var soundEnabled = true
     private var selectedCategory: Int?
     
-    func saveGameSession(_ session: GameSession) {
-        sessionData = session
-    }
     
-    func loadGameSession() -> GameSession? {
+    func saveGameRuntimeState(_ state: GameRuntimeState) {
+        sessionData = state
+    }
+    func loadGameSession() -> GameRuntimeState? {
         return sessionData
     }
     

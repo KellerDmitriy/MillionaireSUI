@@ -12,6 +12,8 @@ protocol ITimerService {
     var displayPublisher: Published<TimerDisplayData>.Publisher { get }
     func start30SecondTimer(completion: @escaping () -> Void)
     func setOnExpire(_ onExpire: @escaping () -> Void)
+    var remainingSeconds: Int { get }
+    func setTotalTime(_ remaining: Int) 
     func pauseTimer()
     func resumeTimer()
     func stopTimer()
@@ -20,7 +22,7 @@ protocol ITimerService {
 final class TimerService: ITimerService {
     
     @Published private(set) var displayData: TimerDisplayData = TimerDisplayData(formattedTime: "00:00", type: .normal)
-    @Published private(set) var progress: Float = 1.0 // 100% в начале (30 сек)
+
     @Published private(set) var isPaused = false
     
     var displayPublisher: Published<TimerDisplayData>.Publisher { $displayData }
@@ -32,6 +34,8 @@ final class TimerService: ITimerService {
     private var cancellable: AnyCancellable?
     
     // MARK: - Public API
+    var remainingSeconds: Int { remaining }
+    
     func start30SecondTimer(completion: @escaping () -> Void) {
         startTimer(seconds: 30, completion: completion)
     }
@@ -53,10 +57,23 @@ final class TimerService: ITimerService {
     }
     
     func resumeTimer() {
-        guard isPaused, remaining > 0 else { return }
-        isPaused = false
-        startPublisher()
-        print("таймер продолжает работать, осталось\(remaining)cek")
+        guard remaining > 0 else { return }
+        
+        // Если был на паузе → снимаем паузу
+        if isPaused {
+            isPaused = false
+            startPublisher()
+            print("▶️ Таймер продолжает с паузы, осталось \(remaining) сек")
+            return
+        }
+        
+        // Если publisher уже не живой (например, после рестарта) → запускаем заново
+        if cancellable == nil {
+
+            updateDisplay()
+            startPublisher()
+            print("▶️ Таймер восстановлен, осталось \(remaining) сек")
+        }
     }
     
     func setOnExpire(_ onExpire: @escaping () -> Void) {
@@ -68,9 +85,13 @@ final class TimerService: ITimerService {
         cancellable = nil
         remaining = 0
         totalSeconds = 0
-        progress = 1.0
         updateDisplay()
         isPaused = false
+    }
+    
+    func setTotalTime(_ remaining: Int) {
+        self.remaining = remaining
+        totalSeconds = remaining
     }
     
     // MARK: - Private
@@ -90,7 +111,6 @@ final class TimerService: ITimerService {
                 self.remaining -= 1
                 
                 // Обновляем прогресс и отображение
-                self.progress = Float(self.remaining) / Float(self.totalSeconds)
                 self.updateDisplay()
                 
                 // Если время вышло, останавливаем таймер и вызываем onComplete

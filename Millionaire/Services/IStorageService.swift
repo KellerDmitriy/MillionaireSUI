@@ -10,8 +10,8 @@ import Foundation
 // MARK: - StorageManagerProtocol
 protocol IStorageService {
     // Game Session
-    func saveGameSession(_ session: GameSession)
-    func loadGameSession() -> GameSession?
+    func saveGameRuntimeState(_ state: GameRuntimeState)
+    func loadGameSession() -> GameRuntimeState?
     func clearSavedSession()
     
     // Best Score
@@ -41,35 +41,36 @@ final class StorageService: IStorageService {
     
     // Keys
     private enum Keys {
-        static let savedGameSession = "SavedGameSession"
+        static let savedStateGameSession = "SavedStateGameSession"
         static let bestScore = "BestScore"
         static let statistics = "GameStatistics"
         static let soundEnabled = "SoundEnabled"
         static let selectedCategory = "SelectedCategoryID"
         static let totalGamesPlayed = "TotalGamesPlayed"
+        static let currentValueTimer = "CurrentValueTimer"
     }
     
     private init() {
     }
     
-    func saveGameSession(_ session: GameSession) {
+    func saveGameRuntimeState(_ state: GameRuntimeState) {
         do {
-            let data = try JSONEncoder().encode(session)
-            defaults.set(data, forKey: Keys.savedGameSession)
+            let data = try JSONEncoder().encode(state)
+            defaults.set(data, forKey: Keys.savedStateGameSession)
             print(" Game session saved successfully")
         } catch {
             print(" Failed to save session: \(error)")
         }
     }
     
-    func loadGameSession() -> GameSession? {
-        guard let data = defaults.data(forKey: Keys.savedGameSession) else {
+    func loadGameSession() -> GameRuntimeState? {
+        guard let data = defaults.data(forKey: Keys.savedStateGameSession) else {
             print(" No saved game session found")
             return nil
         }
         
         do {
-            let session = try JSONDecoder().decode(GameSession.self, from: data)
+            let session = try JSONDecoder().decode(GameRuntimeState.self, from: data)
             print(" Game session loaded successfully")
             return session
         } catch {
@@ -81,7 +82,7 @@ final class StorageService: IStorageService {
     }
     
     func clearSavedSession() {
-        defaults.removeObject(forKey: Keys.savedGameSession)
+        defaults.removeObject(forKey: Keys.savedStateGameSession)
         print(" Saved session cleared")
     }
     
@@ -159,7 +160,7 @@ final class StorageService: IStorageService {
     
     // MARK: - Clear All Data
     func clearAllData() {
-        let keys = [Keys.savedGameSession, Keys.bestScore, Keys.statistics,
+        let keys = [Keys.savedStateGameSession, Keys.bestScore, Keys.statistics,
                     Keys.soundEnabled, Keys.selectedCategory, Keys.totalGamesPlayed]
         keys.forEach { defaults.removeObject(forKey: $0) }
         print(" All storage data cleared")

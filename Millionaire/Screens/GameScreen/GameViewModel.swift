@@ -118,14 +118,7 @@ final class GameViewModel: ObservableObject {
                 print("📱 GameViewModel: сессия обновлена")
                 print("   Вопрос №\(updatedSession.currentQuestionIndex + 1) из \(updatedSession.questions.count)")
                 
-                // Обновляем answers когда меняется вопрос
-                if self.selectedAnswer == nil && // Нет выбранного ответа (новый вопрос)
-                    !updatedSession.isFinished { // Игра не завершена
-                    print("    Перемешиваем ответы для нового вопроса")
-                    self.answers = updatedSession.currentQuestion.allAnswers.shuffled()
-                } else {
-                    print("    Не перемешиваем - показываем результат")
-                }
+
                 
                 // Проверяем необходимость догрузки
                 self.checkIfNeedMoreQuestions(session: updatedSession)
@@ -203,7 +196,14 @@ final class GameViewModel: ObservableObject {
     
     private func startNewRound() {
         print(" Starting new round")
-        
+        // Обновляем answers когда меняется вопрос
+        if self.selectedAnswer == nil && // Нет выбранного ответа (новый вопрос)
+            !session.isFinished { // Игра не завершена
+            print("    Перемешиваем ответы для нового вопроса")
+            self.answers = session.currentQuestion.allAnswers.shuffled()
+        } else {
+            print("    Не перемешиваем - показываем результат")
+        }
         // Дополнительная проверка перед запуском раунда
         guard !session.isFinished else {
             print("   ⚠️ Cannot start round - game not active or finished")
@@ -420,7 +420,7 @@ extension GameViewModel {
         
         // Сохраняем состояние
         if let session = gameManager?.currentSession, !session.isFinished {
-            gameManager?.saveGameSessionState()
+            gameManager?.saveGameRuntimeState()
         }
     }
     

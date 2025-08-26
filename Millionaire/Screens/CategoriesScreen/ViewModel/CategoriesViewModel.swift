@@ -9,6 +9,7 @@ import Foundation
 
 @MainActor
 final class CategoriesViewModel: ObservableObject {
+  
     private let gameManager: GameManager
     
     @Published var selectedCategory: QuestionCategory?
