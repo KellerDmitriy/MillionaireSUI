@@ -70,11 +70,11 @@ final class GameManager: ObservableObject {  // Управляет сессия�
         if let savedSession = storage.loadGameSession(), !savedSession.session.isFinished {
             self.currentSession = savedSession.session
             
+            print("Загружаем \(savedSession.remainingTime)")
             // восстановим таймер
             timer.setTotalTime(savedSession.remainingTime)
             // восстановим аудиосессию
             audioService.restoreState(savedSession.audioState)
-            print("Загружаем \(savedSession.remainingTime)")
             // Загружаем выбранную категорию
             if let categoryId = storage.loadSelectedCategory() {
                 self.selectedCategory = QuestionCategory(id: categoryId, name: "")

@@ -117,7 +117,6 @@ final class GameViewModel: ObservableObject {
                 
                 print("📱 GameViewModel: сессия обновлена")
                 print("   Вопрос №\(updatedSession.currentQuestionIndex + 1) из \(updatedSession.questions.count)")
-                
 
                 
                 // Проверяем необходимость догрузки
@@ -342,26 +341,22 @@ final class GameViewModel: ObservableObject {
     
     private func checkGameEnd(answerResult: AnswerResult?) {
         let mode: ScoreboardMode
-        
-        if session.isFinished {
-            // Игра окончена - деактивируем
-            if session.currentQuestionIndex == 14 {
-                print(" ПОБЕДА! Выигран миллион!")
+
+        if session.isFinished || session.currentQuestionIndex + 1 == session.questions.count {
+            if session.currentQuestionIndex + 1 == session.questions.count && answerResult == .correct {
+                print(" 🏆 ПОБЕДА! Выигран миллион!")
                 mode = .victoryMillionare
-                
             } else {
-                print(" Игра окончена на вопросе \(session.currentQuestionIndex + 1)")
-                print(" Выигрыш: \(session.score) ")
+                print(" ❌ Игра окончена на вопросе \(session.currentQuestionIndex + 1)")
                 mode = .gameOver
             }
-            timerService.stopTimer()
+            stopGame()
         } else {
+            print(" ✅ Правильный ответ! Выигрыш: \(session.score)")
             mode = .roundWon
-            print(" Выигрыш: \(session.score) ")
             timerService.pauseTimer()
         }
-        print(mode)
-        // Делегируем навигацию родительскому компоненту
+
         navigation?.showScoreboard(session, mode: mode)
     }
     
@@ -445,12 +440,8 @@ extension GameViewModel {
     // Полная остановка игры (при завершении)
     func stopGame() {
         print("🛑 GameViewModel: Stopping game completely")
-        
         timerService.stopTimer()
         audioService.stop()
         answerProcessingTask?.cancel()
-        //        gameManager?.finishGameWithTimeout()
-        //        // Очистка через GameManager
-        //        gameManager?.clearSavedGame()
     }
 }

@@ -123,7 +123,7 @@ struct GameSession: Hashable, Codable {
             print("   ✅ Стало: индекс=\(currentQuestionIndex)")
         } else {
             print("   🏁 Вопросы закончились! Победа!")
-            isFinished = true
+            finish()
         }
     }
 
@@ -182,18 +182,10 @@ struct GameSession: Hashable, Codable {
         print("Подсказка 'Право на ошибку' активирована")
         return SecondChanceLifelineResult(isActive: true)
     }
+    
     // Метод для деактивации после использования
     mutating func deactivateSecondChance() {
         secondChanceActive = false
-    }
-    
-    private mutating func nextQuestionOrFinish() {
-        if currentQuestionIndex + 1 < questions.count {
-            currentQuestionIndex += 1
-        } else {
-            print("Закончились вопросы")
-            isFinished = true
-        }
     }
     
     private func canUse(lifeline: Lifeline) -> Bool {
