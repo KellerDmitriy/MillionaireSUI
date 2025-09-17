@@ -202,38 +202,38 @@ struct HomeView: View {
     }
 }
 
-// MARK: - Preview
-#Preview("Home - First Start") {
-    HomeView(
-        gameManager: GameManager.makeForPreview()
-    )
-}
-
-#Preview("Home - With Best Score") {
-    HomeView(
-        gameManager: GameManager.makeForPreview(withBestScore: 125000)
-    )
-}
-
-
-private extension GameSession {
-    /// Создает тестовую сессию для использования в превью
-    static func preview() -> Self {
-        let questions = Array(
-            repeating: QuestionDTO(
-                difficulty: .easy,
-                category: "aaa",
-                question: "Как дела?",
-                correctAnswer: "Хорошо",
-                incorrectAnswers: Array(repeating: "Плохо", count: 3)
-            ),
-            count: 15
-        )
-        
-        guard let session = GameSession(questions: questions) else {
-            fatalError("Failed to create GameSession in preview()")
-        }
-        
-        return session
-    }
-}
+//// MARK: - Preview
+//#Preview("Home - First Start") {
+//    HomeView(
+//        gameManager: GameManager.makeForPreview()
+//    )
+//}
+//
+//#Preview("Home - With Best Score") {
+//    HomeView(
+//        gameManager: GameManager.makeForPreview(withBestScore: 125000)
+//    )
+//}
+//
+//
+//private extension GameSession {
+//    /// Создает тестовую сессию для использования в превью
+//    static func preview() -> Self {
+//        let questions = Array(
+//            repeating: QuestionDTO(
+//                difficulty: .easy,
+//                category: "aaa",
+//                question: "Как дела?",
+//                correctAnswer: "Хорошо",
+//                incorrectAnswers: Array(repeating: "Плохо", count: 3)
+//            ),
+//            count: 15
+//        )
+//        
+//        guard let session = GameSession(questions: questions) else {
+//            fatalError("Failed to create GameSession in preview()")
+//        }
+//        
+//        return session
+//    }
+//}
